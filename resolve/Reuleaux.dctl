@@ -38,9 +38,9 @@ __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
 __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     reuleaux *= NORM_MULTS;
     float3 cart = make_float3(
-        reuleaux.z * _sinf(reuleaux.y) * _cosf(reuleaux.x),
-        reuleaux.z * _sinf(reuleaux.y) * _sinf(reuleaux.x),
-        reuleaux.z * _cosf(reuleaux.y)
+        _cosf(reuleaux.x),
+        _sinf(reuleaux.x),
+        1.0f/(reuleaux.y <= _atan2f(_sqrtf(2.0f), 1.0f) ? _tanf(reuleaux.y) : 3*(reuleaux.y - _atan2f(_sqrtf(2.0f), 1.0f)) + _sqrtf(2.0f))
     );
 
     float d_1 = _sqrtf(2.0f) * cart.z + (2 * cart.x);

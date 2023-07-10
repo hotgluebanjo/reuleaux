@@ -51,9 +51,9 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
     float3 reuleaux_to_rgb(float3 reuleaux) {
         reuleaux *= norm_mults;
         float3 cart = float3(
-            reuleaux.z * sin(reuleaux.y) * cos(reuleaux.x),
-            reuleaux.z * sin(reuleaux.y) * sin(reuleaux.x),
-            reuleaux.z * cos(reuleaux.y)
+            cos(reuleaux.x),
+            sin(reuleaux.x),
+            1.0f/(reuleaux.y <= atan(sqrt(2.0f)) ? tan(reuleaux.y) : 3*(reuleaux.y - atan(sqrt(2.0f))) + sqrt(2.0f))
         );
 
         float d_1 = sqrt(2.0f) * cart.z + (2 * cart.x);
