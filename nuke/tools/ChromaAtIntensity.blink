@@ -1,0 +1,57 @@
+// https://github.com/hotgluebanjo
+kernel ChromaAtIntensity : ImageComputationKernel<ePixelWise>
+{
+    Image<eRead, eAccessPoint, eEdgeClamped> src;
+    Image<eWrite> dst;
+
+    param:
+        float gp_1;
+        float gp_2;
+        float gp_3;
+        float gp_4;
+        float gp_5;
+        float gp_size;
+
+    local:
+        float global_ys[5];
+
+    void define() {
+        defineParam(gp_1, "Global Point 1", 1.0f);
+        defineParam(gp_2, "Global Point 2", 1.0f);
+        defineParam(gp_3, "Global Point 3", 1.0f);
+        defineParam(gp_4, "Global Point 4", 1.0f);
+        defineParam(gp_5, "Global Point 5", 1.0f);
+        defineParam(gp_size, "Global Size", 1.0f / 5.0f);
+    }
+
+    void init() {
+        global_ys[0] = gp_1;
+        global_ys[1] = gp_2;
+        global_ys[2] = gp_3;
+        global_ys[3] = gp_4;
+        global_ys[4] = gp_5;
+    }
+
+    float gauss_basis(float x, float s) {
+        return exp(-pow(x / s, 2.0f));
+    }
+
+    void process() {
+        SampleType(src) input = src();
+
+        float sum = 0.0f;
+        float weight_sum = 0.0f;
+
+        for (int i = 0; i < 5; i += 1) {
+            float cx = float(i) / 5.0f;
+            float weight = gauss_basis(input.z - cx, gp_size);
+            sum += weight * global_ys[i];
+            weight_sum += weight;
+        }
+
+        float chroma_curve = sum / weight_sum;
+        float adjusted = input.y * chroma_curve;
+
+        dst() = float4(input.x, adjusted, input.z, input.w);
+    }
+};

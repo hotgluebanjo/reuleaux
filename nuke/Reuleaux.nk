@@ -1,0 +1,96 @@
+set cut_paste_input [stack 0]
+version 14.0 v5
+push $cut_paste_input
+Group {
+ name Reuleaux
+ label "\[value direction]"
+ selected true
+ xpos 164
+ ypos -329
+ addUserKnob {20 User}
+ addUserKnob {4 direction M {forward inverse}}
+}
+ Input {
+  inputs 0
+  name Input
+  xpos -40
+  ypos -9
+ }
+set Ne09d6000 [stack 0]
+ Multiply {
+  value {{2*pi} {"atan2(sqrt(2), 1)"} 1 1}
+  name Denormalize
+  xpos 70
+  ypos 57
+ }
+ Expression {
+  temp_name0 r_
+  temp_expr0 "b * sin(g) * cos(r)"
+  temp_name1 g_
+  temp_expr1 "b * sin(g) * sin(r)"
+  temp_name2 b_
+  temp_expr2 "b * cos(g)"
+  temp_name3 M
+  temp_expr3 "max((sqrt(2)*b_)/3 + (2*r_)/3, (sqrt(2)*b_)/3 + g_/sqrt(3) - r_/3, (sqrt(2)*b_)/3 - g_/sqrt(3) - r_/3)"
+  expr0 "abs(M) < 1e-6 ? 0 : b * r_ / M"
+  expr1 "abs(M) < 1e-6 ? 0 : b * g_ / M"
+  name Reuleaux_to_OCS
+  xpos 70
+  ypos 111
+ }
+ Expression {
+  temp_name1 if1
+  temp_expr1 "(g <= 0 || r > 0) && (r <= 0 || (g + sqrt(3)*r) <= 0)"
+  temp_name2 if2
+  temp_expr2 "(g > 0 || r > 0) && (g > sqrt(3)*r || r <= 0)"
+  expr0 "if1 ? g/sqrt(3)+r+b : (if2 ? -g/sqrt(3)+r+b : b)"
+  expr1 "if1 ? (2/sqrt(3))*g+b : (if2 ? b : g/sqrt(3)-r+b)"
+  expr2 "if1 ? b : (if2 ? -(2/sqrt(3))*g+b : -g/sqrt(3)-r+b)"
+  name OCS_to_RGB
+  xpos 70
+  ypos 159
+ }
+push $Ne09d6000
+ Expression {
+  temp_name0 u
+  temp_expr0 "sqrt(6) * (r / 3 - (g+b) / 6)"
+  temp_name1 v
+  temp_expr1 "(g - b) / sqrt(2)"
+  temp_name2 w
+  temp_expr2 "(r + g + b) / sqrt(3)"
+  temp_name3 at
+  temp_expr3 "atan2(v, u)"
+  expr0 "at < 0 ? at + 2*pi : at"
+  expr1 "atan2(hypot(u, v), w)"
+  expr2 "max(r, g, b)"
+  name RGB_to_Reuleaux
+  note_font Verdana
+  xpos -150
+  ypos 63
+ }
+ Multiply {
+  value {{1/(2*pi)} {"1/atan2(sqrt(2), 1)"} 1 1}
+  name Normalize
+  xpos -150
+  ypos 105
+ }
+ Switch {
+  inputs 2
+  which {{parent.direction}}
+  name Inverse
+  xpos -40
+  ypos 231
+ }
+ Output {
+  name Output1
+  xpos -40
+  ypos 279
+ }
+ StickyNote {
+  inputs 0
+  name StickyNote1
+  label "Created by:\nhttps://github.com/hotgluebanjo\nhttps://github.com/calvinsilly"
+  xpos 84
+  ypos -18
+ }
+end_group

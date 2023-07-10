@@ -1,0 +1,102 @@
+// Created by:
+// https://github.com/hotgluebanjo
+// https://github.com/calvinsilly
+kernel Reuleaux : ImageComputationKernel<ePixelWise>
+{
+    Image<eRead, eAccessPoint, eEdgeClamped> src;
+    Image<eWrite> dst;
+
+    param:
+        bool invert;
+
+    local:
+        // Watch this create a conflict somewhere.
+        float M_PI;
+        float3 norm_mults;
+
+    void define() {
+        defineParam(invert, "Invert", false);
+    }
+
+    void init() {
+        M_PI = 3.141592653589f;
+        norm_mults = float3(
+            2.0f * M_PI,
+            atan2(sqrt(2.0f), 1.0f),
+            1.0f
+        );
+    }
+
+    float3 rgb_to_reuleaux(float3 rgb) {
+        float3 rotated = float3(
+            sqrt(6.0f) * (rgb.x / 3.0f - (rgb.y + rgb.z) / 6.0f),
+            (rgb.y - rgb.z) / sqrt(2.0f),
+            (rgb.x + rgb.y + rgb.z) / sqrt(3.0f)
+        );
+
+        float3 reuleaux;
+        float at = atan2(rotated.y, rotated.x);
+
+        if (at < 0.0f)
+            reuleaux.x = at + 2.0f * M_PI;
+        else
+            reuleaux.x = at;
+
+        reuleaux.y = atan2(sqrt(pow(rotated.x, 2.0f) + pow(rotated.y, 2.0f)), rotated.z);
+        reuleaux.z = max(rgb.x, max(rgb.y, rgb.z));
+
+        return reuleaux * 1.0f / norm_mults;
+    }
+
+    float3 reuleaux_to_rgb(float3 reuleaux) {
+        reuleaux *= norm_mults;
+        float3 cart = float3(
+            reuleaux.z * sin(reuleaux.y) * cos(reuleaux.x),
+            reuleaux.z * sin(reuleaux.y) * sin(reuleaux.x),
+            reuleaux.z * cos(reuleaux.y)
+        );
+
+        float d_1 = (sqrt(2.0f) * cart.z) / 3.0f + (2 * cart.x) / 3.0f;
+        float d_2 = (sqrt(2.0f) * cart.z) / 3.0f + cart.y / sqrt(3.0f) - cart.x / 3.0f;
+        float d_3 = (sqrt(2.0f) * cart.z) / 3.0f - cart.y / sqrt(3.0f) - cart.x / 3.0f;
+        float m = max(d_1, max(d_2, d_3));
+
+        float3 ocs;
+        ocs.x = m < 1e-6f ? 0.0f : reuleaux.z * cart.x / m;
+        ocs.y = m < 1e-6f ? 0.0f : reuleaux.z * cart.y / m;
+        ocs.z = reuleaux.z;
+
+        float3 rgb;
+        bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || (ocs.y + sqrt(3.0f) * ocs.x) <= 0.0f);
+        bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.y > sqrt(3.0f) * ocs.x || ocs.x <= 0.0f);
+
+        if (case_1) {
+            rgb.x = ocs.y / sqrt(3.0f) + ocs.x + ocs.z;
+            rgb.y = 2.0f / sqrt(3.0f) * ocs.y + ocs.z;
+            rgb.z = ocs.z;
+        } else if (case_2) {
+            rgb.x = -ocs.y / sqrt(3.0f) + ocs.x + ocs.z;
+            rgb.y = ocs.z;
+            rgb.z = -(2.0f / sqrt(3.0f)) * ocs.y + ocs.z;
+        } else {
+            rgb.x = ocs.z;
+            rgb.y = ocs.y / sqrt(3.0f) - ocs.x + ocs.z;
+            rgb.z = -ocs.y / sqrt(3.0f) - ocs.x + ocs.z;
+        }
+
+        return rgb;
+    }
+
+    void process() {
+        SampleType(src) input = src();
+
+        float3 triplet = float3(input.x, input.y, input.z);
+
+        if (invert)
+            triplet = reuleaux_to_rgb(triplet);
+        else
+            triplet = rgb_to_reuleaux(triplet);
+
+        dst() = float4(triplet.x, triplet.y, triplet.z, input.w);
+    }
+};

@@ -1,0 +1,72 @@
+// https://github.com/hotgluebanjo
+kernel HueAtHue : ImageComputationKernel<ePixelWise>
+{
+    Image<eRead, eAccessPoint, eEdgeClamped> src;
+    Image<eWrite> dst;
+
+    param:
+        float2 red;
+        float2 yel;
+        float2 grn;
+        float2 cyn;
+        float2 blu;
+        float2 mag;
+        float range;
+        bool invert;
+
+    local:
+        float2 curve[6];
+
+    void define() {
+        defineParam(red, "Red", float2(0.0f));
+        defineParam(yel, "Yellow", float2(1.0f / 6.0f));
+        defineParam(grn, "Green", float2(2.0f / 6.0f));
+        defineParam(cyn, "Cyan", float2(3.0f / 6.0f));
+        defineParam(blu, "Blue", float2(4.0f / 6.0f));
+        defineParam(mag, "Magenta", float2(5.0f / 6.0f));
+        defineParam(range, "Range", 1.0f / 6.0f);
+        defineParam(invert, "Invert", false);
+    }
+
+    void init() {
+        curve[0] = red;
+        curve[1] = yel;
+        curve[2] = grn;
+        curve[3] = cyn;
+        curve[4] = blu;
+        curve[5] = mag;
+    }
+
+    float gauss_basis(float x, float s) {
+        return exp(-pow(x / s, 2.0f));
+    }
+
+    float wrap(float x) {
+        if (x < -0.5f) {
+            return x + 1.0f;
+        } else if (x > 0.5f) {
+            return x - 1.0f;
+        } else {
+            return x;
+        }
+    }
+
+    void process() {
+        SampleType(src) input_img = src();
+
+        float hue = input_img.x;
+        float g_sum = 0.0f;
+
+        if (invert) {
+            for (int i = 0; i < 6; i += 1)
+                g_sum += gauss_basis(wrap(hue - curve[i].x), range) * -(curve[i].y - curve[i].x);
+        } else {
+            for (int i = 0; i < 6; i += 1)
+                g_sum += gauss_basis(wrap(hue - curve[i].x), range) * (curve[i].y - curve[i].x);
+        }
+
+        float res = hue + g_sum;
+
+        dst() = float4(res, input_img.y, input_img.z, input_img.w);
+    }
+};

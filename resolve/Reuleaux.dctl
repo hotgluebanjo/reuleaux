@@ -1,0 +1,90 @@
+// Created by:
+// https://github.com/hotgluebanjo
+// https://github.com/calvinsilly
+
+DEFINE_UI_PARAMS(DIRECTION, Direction, DCTLUI_COMBO_BOX, 0, {Forward, Inverse}, {RGB to Reuleaux, Reuleaux to RGB})
+
+__CONSTANT__ float PI_LOCAL = 3.141592653589f;
+
+// This is 100% going to cause complaints.
+#define NORM_MULTS make_float3(2.0f * PI_LOCAL, _atan2f(_sqrtf(2.0f), 1.0f), 1.0f)
+
+// _powf(x, 2.0f), x > 0 causes NaNs??
+__DEVICE__ float _sqrf(float x) {
+    return x * x;
+}
+
+__DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
+    float3 rotated = make_float3(
+        _sqrtf(6.0f) * (rgb.x / 3.0f - (rgb.y + rgb.z) / 6.0f),
+        (rgb.y - rgb.z) / _sqrtf(2.0f),
+        (rgb.x + rgb.y + rgb.z) / _sqrtf(3.0f)
+    );
+
+    float3 reuleaux;
+    float at = _atan2f(rotated.y, rotated.x);
+
+    if (at < 0.0f)
+        reuleaux.x = at + 2.0f * M_PI;
+    else
+        reuleaux.x = at;
+
+    reuleaux.y = _atan2f(_sqrtf(_sqrf(rotated.x) + _sqrf(rotated.y)), rotated.z);
+    reuleaux.z = _fmaxf(rgb.x, _fmaxf(rgb.y, rgb.z));
+
+    return reuleaux * 1.0f / NORM_MULTS;
+}
+
+__DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
+    reuleaux *= NORM_MULTS;
+    float3 cart = make_float3(
+        reuleaux.z * _sinf(reuleaux.y) * _cosf(reuleaux.x),
+        reuleaux.z * _sinf(reuleaux.y) * _sinf(reuleaux.x),
+        reuleaux.z * _cosf(reuleaux.y)
+    );
+
+    float d_1 = (_sqrtf(2.0f) * cart.z) / 3.0f + (2 * cart.x) / 3.0f;
+    float d_2 = (_sqrtf(2.0f) * cart.z) / 3.0f + cart.y / _sqrtf(3.0f) - cart.x / 3.0f;
+    float d_3 = (_sqrtf(2.0f) * cart.z) / 3.0f - cart.y / _sqrtf(3.0f) - cart.x / 3.0f;
+    float m = _fmaxf(d_1, _fmaxf(d_2, d_3));
+
+    float3 ocs;
+    ocs.x = m < 1e-6f ? 0.0f : reuleaux.z * cart.x / m;
+    ocs.y = m < 1e-6f ? 0.0f : reuleaux.z * cart.y / m;
+    ocs.z = reuleaux.z;
+
+    float3 rgb;
+    bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || (ocs.y + _sqrtf(3.0f) * ocs.x) <= 0.0f);
+    bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.y > _sqrtf(3.0f) * ocs.x || ocs.x <= 0.0f);
+
+    if (case_1) {
+        rgb.x = ocs.y / _sqrtf(3.0f) + ocs.x + ocs.z;
+        rgb.y = 2.0f / _sqrtf(3.0f) * ocs.y + ocs.z;
+        rgb.z = ocs.z;
+    } else if (case_2) {
+        rgb.x = -ocs.y / _sqrtf(3.0f) + ocs.x + ocs.z;
+        rgb.y = ocs.z;
+        rgb.z = -(2.0f / _sqrtf(3.0f)) * ocs.y + ocs.z;
+    } else {
+        rgb.x = ocs.z;
+        rgb.y = ocs.y / _sqrtf(3.0f) - ocs.x + ocs.z;
+        rgb.z = -ocs.y / _sqrtf(3.0f) - ocs.x + ocs.z;
+    }
+
+    return rgb;
+}
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    float3 input = make_float3(p_R, p_G, p_B);
+    float3 res;
+
+    switch (DIRECTION) {
+    case Forward:
+        res = rgb_to_reuleaux(input);
+        break;
+    case Inverse:
+        res = reuleaux_to_rgb(input);
+    }
+
+    return res;
+}

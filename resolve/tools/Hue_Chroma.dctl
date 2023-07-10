@@ -1,0 +1,66 @@
+// https://github.com/hotgluebanjo
+
+// Range of hue to affect. Defaults to 1/6.
+DEFINE_UI_PARAMS(RANGE, Range, DCTLUI_SLIDER_FLOAT, 0.166, 0.0, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(RED_CHROMA, Red Chroma, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(RED_HUE, Red Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(YEL_CHROMA, Yellow Chroma, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(YEL_HUE, Yellow Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(GRN_CHROMA, Green Chroma, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(GRN_HUE, Green Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(CYN_CHROMA, Cyan Chroma, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(CYN_HUE, Cyan Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(BLU_CHROMA, Blue Chroma, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(BLU_HUE, Blue Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(MAG_CHROMA, Magenta Chroma, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(MAG_HUE, Magenta Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
+
+__DEVICE__ inline float _sqrf(float x) {
+    return x * x;
+}
+
+__DEVICE__ float gauss_basis(float x, float s) {
+    return _expf(-_sqrf(x / s));
+}
+
+__DEVICE__ float wrap(float x) {
+    if (x < -0.5f) {
+        return x + 1.0f;
+    } else if (x > 0.5f) {
+        return x - 1.0f;
+    } else {
+        return x;
+    }
+}
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    float2 corners[6] = {
+        {RED_HUE, RED_CHROMA},
+        {YEL_HUE, YEL_CHROMA},
+        {GRN_HUE, GRN_CHROMA},
+        {CYN_HUE, CYN_CHROMA},
+        {BLU_HUE, BLU_CHROMA},
+        {MAG_HUE, MAG_CHROMA},
+    };
+
+    float hue = p_R;
+    float chroma = p_G;
+
+    for (int i = 0; i < 6; i += 1) {
+        float cx = float(i) / 6.0f;
+        float mask = gauss_basis(wrap(hue - cx), RANGE);
+        float chroma_adj = INVERT ? corners[i].y : 1.0f / corners[i].y;
+        chroma = _mix(chroma, _powf(chroma, chroma_adj), mask);
+        hue += mask * (INVERT ? -corners[i].x : corners[i].x);
+    }
+
+    return make_float3(hue, chroma, p_B);
+}
