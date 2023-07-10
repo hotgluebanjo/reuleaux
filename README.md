@@ -10,6 +10,8 @@ Several tools are included. Most are not entirely invertible. Ideally they'll pr
 
 Note: BlinkScript was made available to Nuke Non-commercial users in version 14.0v3, so the BlinkScripts will work there. Regardless, prefer the `.nk` version of the model itself.
 
+Related, check out this [similar model by Juan Pablo Zambrano](https://github.com/JuanPabloZambrano/DCTL/tree/main/NormSphericalCoords), which has two chroma normalization modes.
+
 ## Background and Differences to Other Models
 
 This model differs from the popular [spherical coordinate model by Chen et al.](https://doi.org/10.1117/1.JEI.22.4.043032) in that it replaces the Euclidean norm with the maximum of the input triplet. This adjustment is implemented with a custom opponent color model. *[Constructing cylindrical coordinate colour spaces](https://doi.org/10.1016/j.patrec.2007.11.002)* by Allan Hanbury helped immensely in demonstrating the possibility of this approach.
