@@ -16,7 +16,7 @@ __DEVICE__ float _sqrf(float x) {
 
 __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
     float3 rotated = make_float3(
-        _sqrtf(6.0f) * (rgb.x / 3.0f - (rgb.y + rgb.z) / 6.0f),
+        _sqrtf(2.0f/3.0f) * (rgb.x - (rgb.y + rgb.z) / 2.0f),
         (rgb.y - rgb.z) / _sqrtf(2.0f),
         (rgb.x + rgb.y + rgb.z) / _sqrtf(3.0f)
     );
@@ -43,10 +43,10 @@ __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
         reuleaux.z * _cosf(reuleaux.y)
     );
 
-    float d_1 = (_sqrtf(2.0f) * cart.z) / 3.0f + (2 * cart.x) / 3.0f;
-    float d_2 = (_sqrtf(2.0f) * cart.z) / 3.0f + cart.y / _sqrtf(3.0f) - cart.x / 3.0f;
-    float d_3 = (_sqrtf(2.0f) * cart.z) / 3.0f - cart.y / _sqrtf(3.0f) - cart.x / 3.0f;
-    float m = _fmaxf(d_1, _fmaxf(d_2, d_3));
+    float d_1 = _sqrtf(2.0f) * cart.z + (2 * cart.x);
+    float d_2 = _sqrtf(2.0f) * cart.z + _sqrtf(3.0f) * cart.y - cart.x;
+    float d_3 = _sqrtf(2.0f) * cart.z - _sqrtf(3.0f) * cart.y - cart.x;
+    float m = _fmaxf(d_1, _fmaxf(d_2, d_3)) / 3.0f;
 
     float3 ocs;
     ocs.x = m < 1e-6f ? 0.0f : reuleaux.z * cart.x / m;
@@ -54,8 +54,8 @@ __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     ocs.z = reuleaux.z;
 
     float3 rgb;
-    bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || (ocs.y + _sqrtf(3.0f) * ocs.x) <= 0.0f);
-    bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.y > _sqrtf(3.0f) * ocs.x || ocs.x <= 0.0f);
+    bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || ocs.y <= -sqrt(3.0f) * ocs.x);
+    bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0 || ocs.y > sqrt(3.0f) * ocs.x);
 
     if (case_1) {
         rgb.x = ocs.y / _sqrtf(3.0f) + ocs.x + ocs.z;

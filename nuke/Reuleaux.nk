@@ -5,8 +5,8 @@ Group {
  name Reuleaux
  label "\[value direction]"
  selected true
- xpos 164
- ypos -329
+ xpos 20
+ ypos -281
  addUserKnob {20 User}
  addUserKnob {4 direction M {forward inverse}}
 }
@@ -16,33 +16,34 @@ Group {
   xpos -40
   ypos -9
  }
-set Ne09d6000 [stack 0]
+set N5f7d400 [stack 0]
  Multiply {
-  value {{2*pi} {"atan2(sqrt(2), 1)"} 1 1}
+  value {{2*pi} {atan(sqrt(2))} 1 1}
   name Denormalize
   xpos 70
   ypos 57
  }
  Expression {
   temp_name0 r_
-  temp_expr0 "b * sin(g) * cos(r)"
+  temp_expr0 b*sin(g)*cos(r)
   temp_name1 g_
-  temp_expr1 "b * sin(g) * sin(r)"
+  temp_expr1 b*sin(g)*sin(r)
   temp_name2 b_
-  temp_expr2 "b * cos(g)"
+  temp_expr2 b*cos(g)
   temp_name3 M
-  temp_expr3 "max((sqrt(2)*b_)/3 + (2*r_)/3, (sqrt(2)*b_)/3 + g_/sqrt(3) - r_/3, (sqrt(2)*b_)/3 - g_/sqrt(3) - r_/3)"
-  expr0 "abs(M) < 1e-6 ? 0 : b * r_ / M"
-  expr1 "abs(M) < 1e-6 ? 0 : b * g_ / M"
+  temp_expr3 "max(sqrt(2)*b_ + 2*r_, sqrt(2)*b_ + sqrt(3)*g_ - r_, sqrt(2)*b_ - sqrt(3)*g_ - r_)/3"
+  expr0 "M==0 ? 0 : b*r_/M"
+  expr1 "M==0 ? 0 : b*g_/M"
+  expr2 b
   name Reuleaux_to_OCS
   xpos 70
   ypos 111
  }
  Expression {
-  temp_name1 if1
-  temp_expr1 "(g <= 0 || r > 0) && (r <= 0 || (g + sqrt(3)*r) <= 0)"
-  temp_name2 if2
-  temp_expr2 "(g > 0 || r > 0) && (g > sqrt(3)*r || r <= 0)"
+  temp_name0 if1
+  temp_expr0 "(g <= 0 || r > 0) && (r <= 0 || g <= -sqrt(3)*r)"
+  temp_name1 if2
+  temp_expr1 "(g > 0 || r > 0) && (r <=0 || g > sqrt(3)*r)"
   expr0 "if1 ? g/sqrt(3)+r+b : (if2 ? -g/sqrt(3)+r+b : b)"
   expr1 "if1 ? (2/sqrt(3))*g+b : (if2 ? b : g/sqrt(3)-r+b)"
   expr2 "if1 ? b : (if2 ? -(2/sqrt(3))*g+b : -g/sqrt(3)-r+b)"
@@ -50,26 +51,25 @@ set Ne09d6000 [stack 0]
   xpos 70
   ypos 159
  }
-push $Ne09d6000
+push $N5f7d400
  Expression {
   temp_name0 u
-  temp_expr0 "sqrt(6) * (r / 3 - (g+b) / 6)"
+  temp_expr0 sqrt(2/3)*(r-(g+b)/2)
   temp_name1 v
-  temp_expr1 "(g - b) / sqrt(2)"
+  temp_expr1 (g-b)/sqrt(2)
   temp_name2 w
-  temp_expr2 "(r + g + b) / sqrt(3)"
-  temp_name3 at
-  temp_expr3 "atan2(v, u)"
-  expr0 "at < 0 ? at + 2*pi : at"
-  expr1 "atan2(hypot(u, v), w)"
-  expr2 "max(r, g, b)"
+  temp_expr2 (r+g+b)/sqrt(3)
+  temp_name3 atan
+  temp_expr3 atan2(v,u)
+  expr0 "atan < 0 ? atan + 2*pi : atan"
+  expr1 "atan2(hypot(u,v), w)"
+  expr2 max(r,g,b)
   name RGB_to_Reuleaux
-  note_font Verdana
   xpos -150
   ypos 63
  }
  Multiply {
-  value {{1/(2*pi)} {"1/atan2(sqrt(2), 1)"} 1 1}
+  value {{1/(2*pi)} {1/atan(sqrt(2))} 1 1}
   name Normalize
   xpos -150
   ypos 105
@@ -90,7 +90,7 @@ push $Ne09d6000
   inputs 0
   name StickyNote1
   label "Created by:\nhttps://github.com/hotgluebanjo\nhttps://github.com/calvinsilly"
-  xpos 84
-  ypos -18
+  xpos 126
+  ypos -21
  }
 end_group

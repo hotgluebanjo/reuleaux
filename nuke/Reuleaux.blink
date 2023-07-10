@@ -22,14 +22,14 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         M_PI = 3.141592653589f;
         norm_mults = float3(
             2.0f * M_PI,
-            atan2(sqrt(2.0f), 1.0f),
+            atan(sqrt(2.0f)),
             1.0f
         );
     }
 
     float3 rgb_to_reuleaux(float3 rgb) {
         float3 rotated = float3(
-            sqrt(6.0f) * (rgb.x / 3.0f - (rgb.y + rgb.z) / 6.0f),
+            sqrt(2.0f/3.0f) * (rgb.x - (rgb.y + rgb.z) / 2.0f),
             (rgb.y - rgb.z) / sqrt(2.0f),
             (rgb.x + rgb.y + rgb.z) / sqrt(3.0f)
         );
@@ -56,10 +56,10 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
             reuleaux.z * cos(reuleaux.y)
         );
 
-        float d_1 = (sqrt(2.0f) * cart.z) / 3.0f + (2 * cart.x) / 3.0f;
-        float d_2 = (sqrt(2.0f) * cart.z) / 3.0f + cart.y / sqrt(3.0f) - cart.x / 3.0f;
-        float d_3 = (sqrt(2.0f) * cart.z) / 3.0f - cart.y / sqrt(3.0f) - cart.x / 3.0f;
-        float m = max(d_1, max(d_2, d_3));
+        float d_1 = sqrt(2.0f) * cart.z + (2 * cart.x);
+        float d_2 = sqrt(2.0f) * cart.z + sqrt(3.0f) * cart.y - cart.x;
+        float d_3 = sqrt(2.0f) * cart.z - sqrt(3.0f) * cart.y - cart.x;
+        float m = max(d_1, max(d_2, d_3)) / 3.0f;
 
         float3 ocs;
         ocs.x = m < 1e-6f ? 0.0f : reuleaux.z * cart.x / m;
@@ -67,8 +67,8 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         ocs.z = reuleaux.z;
 
         float3 rgb;
-        bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || (ocs.y + sqrt(3.0f) * ocs.x) <= 0.0f);
-        bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.y > sqrt(3.0f) * ocs.x || ocs.x <= 0.0f);
+        bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || ocs.y <= -sqrt(3.0f) * ocs.x);
+        bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0 || ocs.y > sqrt(3.0f) * ocs.x);
 
         if (case_1) {
             rgb.x = ocs.y / sqrt(3.0f) + ocs.x + ocs.z;
