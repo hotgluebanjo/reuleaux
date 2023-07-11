@@ -53,7 +53,7 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         float3 cart = float3(
             cos(reuleaux.x),
             sin(reuleaux.x),
-            1.0f/(reuleaux.y <= atan(sqrt(2.0f)) ? tan(reuleaux.y) : 3*(reuleaux.y - atan(sqrt(2.0f))) + sqrt(2.0f))
+            1.0f/(reuleaux.y <= atan(sqrt(2.0f)) ? tan(reuleaux.y) : 3.0f*(reuleaux.y - atan(sqrt(2.0f))) + sqrt(2.0f))
         );
 
         float d_1 = sqrt(2.0f) * cart.z + (2 * cart.x);

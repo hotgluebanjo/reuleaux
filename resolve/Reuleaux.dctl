@@ -40,7 +40,7 @@ __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     float3 cart = make_float3(
         _cosf(reuleaux.x),
         _sinf(reuleaux.x),
-        1.0f/(reuleaux.y <= _atan2f(_sqrtf(2.0f), 1.0f) ? _tanf(reuleaux.y) : 3*(reuleaux.y - _atan2f(_sqrtf(2.0f), 1.0f)) + _sqrtf(2.0f))
+        1.0f/(reuleaux.y <= _atan2f(_sqrtf(2.0f), 1.0f) ? _tanf(reuleaux.y) : 3.0f*(reuleaux.y - _atan2f(_sqrtf(2.0f), 1.0f)) + _sqrtf(2.0f))
     );
 
     float d_1 = _sqrtf(2.0f) * cart.z + (2 * cart.x);
