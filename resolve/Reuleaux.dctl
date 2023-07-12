@@ -9,27 +9,22 @@ __CONSTANT__ float PI_LOCAL = 3.141592653589f;
 // This is 100% going to cause complaints.
 #define NORM_MULTS make_float3(2.0f * PI_LOCAL, _atan2f(_sqrtf(2.0f), 1.0f), 1.0f)
 
-// _powf(x, 2.0f), x > 0 causes NaNs??
-__DEVICE__ float _sqrf(float x) {
-    return x * x;
-}
-
 __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
-    float3 rotated = make_float3(
+    float3 rotated = {
         _sqrtf(2.0f/3.0f) * (rgb.x - (rgb.y + rgb.z) / 2.0f),
         (rgb.y - rgb.z) / _sqrtf(2.0f),
         (rgb.x + rgb.y + rgb.z) / _sqrtf(3.0f)
-    );
+    };
 
     float3 reuleaux;
     float at = _atan2f(rotated.y, rotated.x);
 
     if (at < 0.0f)
-        reuleaux.x = at + 2.0f * M_PI;
+        reuleaux.x = at + 2.0f * PI_LOCAL;
     else
         reuleaux.x = at;
 
-    reuleaux.y = _atan2f(_sqrtf(_sqrf(rotated.x) + _sqrf(rotated.y)), rotated.z);
+    reuleaux.y = _atan2f(_hypotf(rotated.x, rotated.y), rotated.z);
     reuleaux.z = _fmaxf(rgb.x, _fmaxf(rgb.y, rgb.z));
 
     return reuleaux * 1.0f / NORM_MULTS;
@@ -37,25 +32,31 @@ __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
 
 __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     reuleaux *= NORM_MULTS;
-    float3 cart = make_float3(
-        _cosf(reuleaux.x),
-        _sinf(reuleaux.x),
-        1.0f/(reuleaux.y <= _atan2f(_sqrtf(2.0f), 1.0f) ? _tanf(reuleaux.y) : 3.0f*(reuleaux.y - _atan2f(_sqrtf(2.0f), 1.0f)) + _sqrtf(2.0f))
-    );
 
-    float d_1 = _sqrtf(2.0f) * cart.z + (2 * cart.x);
+    float3 cart;
+    cart.x = _cosf(reuleaux.x);
+    cart.y = _sinf(reuleaux.x);
+
+    // Tangent with a linear extension. Fixes asymptotic chroma.
+    if (reuleaux.y <= NORM_MULTS.y)
+        cart.z = 1.0f / _tanf(reuleaux.y);
+    else
+        cart.z = 1.0f / (3.0f * (reuleaux.y - NORM_MULTS.y) + _sqrtf(2.0f));
+
+    float d_1 = _sqrtf(2.0f) * cart.z + (2.0f * cart.x);
     float d_2 = _sqrtf(2.0f) * cart.z + _sqrtf(3.0f) * cart.y - cart.x;
     float d_3 = _sqrtf(2.0f) * cart.z - _sqrtf(3.0f) * cart.y - cart.x;
     float m = _fmaxf(d_1, _fmaxf(d_2, d_3)) / 3.0f;
 
-    float3 ocs;
-    ocs.x = m < 1e-6f ? 0.0f : reuleaux.z * cart.x / m;
-    ocs.y = m < 1e-6f ? 0.0f : reuleaux.z * cart.y / m;
-    ocs.z = reuleaux.z;
+    float3 ocs = {
+        _fabs(m) < 1e-6f ? 0.0f : reuleaux.z * cart.x / m,
+        _fabs(m) < 1e-6f ? 0.0f : reuleaux.z * cart.y / m,
+        reuleaux.z
+    };
 
     float3 rgb;
-    bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || ocs.y <= -sqrt(3.0f) * ocs.x);
-    bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0 || ocs.y > sqrt(3.0f) * ocs.x);
+    bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || ocs.y <= -_sqrtf(3.0f) * ocs.x);
+    bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0 || ocs.y > _sqrtf(3.0f) * ocs.x);
 
     if (case_1) {
         rgb.x = ocs.y / _sqrtf(3.0f) + ocs.x + ocs.z;

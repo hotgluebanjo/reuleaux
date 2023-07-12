@@ -50,21 +50,27 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
 
     float3 reuleaux_to_rgb(float3 reuleaux) {
         reuleaux *= norm_mults;
-        float3 cart = float3(
-            cos(reuleaux.x),
-            sin(reuleaux.x),
-            1.0f/(reuleaux.y <= atan(sqrt(2.0f)) ? tan(reuleaux.y) : 3.0f*(reuleaux.y - atan(sqrt(2.0f))) + sqrt(2.0f))
-        );
 
-        float d_1 = sqrt(2.0f) * cart.z + (2 * cart.x);
+        float3 cart;
+        cart.x = cos(reuleaux.x);
+        cart.y = sin(reuleaux.x);
+
+        // Tangent with a linear extension. Fixes asymptotic chroma.
+        if (reuleaux.y <= norm_mults.y)
+            cart.z = 1.0f / tan(reuleaux.y);
+        else
+            cart.z = 1.0f / (3.0f * (reuleaux.y - norm_mults.y) + sqrt(2.0f));
+
+        float d_1 = sqrt(2.0f) * cart.z + (2.0f * cart.x);
         float d_2 = sqrt(2.0f) * cart.z + sqrt(3.0f) * cart.y - cart.x;
         float d_3 = sqrt(2.0f) * cart.z - sqrt(3.0f) * cart.y - cart.x;
         float m = max(d_1, max(d_2, d_3)) / 3.0f;
 
-        float3 ocs;
-        ocs.x = m < 1e-6f ? 0.0f : reuleaux.z * cart.x / m;
-        ocs.y = m < 1e-6f ? 0.0f : reuleaux.z * cart.y / m;
-        ocs.z = reuleaux.z;
+        float3 ocs = float3(
+            fabs(m) < 1e-6f ? 0.0f : reuleaux.z * cart.x / m,
+            fabs(m) < 1e-6f ? 0.0f : reuleaux.z * cart.y / m,
+            reuleaux.z
+        );
 
         float3 rgb;
         bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || ocs.y <= -sqrt(3.0f) * ocs.x);
