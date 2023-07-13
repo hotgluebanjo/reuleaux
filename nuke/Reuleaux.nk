@@ -59,9 +59,7 @@ push $N5f7d400
   temp_expr1 (g-b)/sqrt(2)
   temp_name2 w
   temp_expr2 (r+g+b)/sqrt(3)
-  temp_name3 atan
-  temp_expr3 atan2(v,u)
-  expr0 "atan < 0 ? atan + 2*pi : atan"
+  expr0 "pi-atan2(v,-u)"
   expr1 "atan2(hypot(u,v), w)"
   expr2 max(r,g,b)
   name RGB_to_Reuleaux
