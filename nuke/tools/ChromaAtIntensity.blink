@@ -5,52 +5,99 @@ kernel ChromaAtIntensity : ImageComputationKernel<ePixelWise>
     Image<eWrite> dst;
 
     param:
-        float gp_1;
-        float gp_2;
-        float gp_3;
-        float gp_4;
-        float gp_5;
-        float gp_size;
+        float its_1;
+        float its_2;
+        float its_3;
+        float its_4;
+        float its_5;
+        float its_6;
+        float its_range;
+
+        float red;
+        float yel;
+        float grn;
+        float cyn;
+        float blu;
+        float mag;
 
     local:
-        float global_ys[5];
+        float global_ys[6];
+        float corner_ys[6];
 
     void define() {
-        defineParam(gp_1, "Global Point 1", 1.0f);
-        defineParam(gp_2, "Global Point 2", 1.0f);
-        defineParam(gp_3, "Global Point 3", 1.0f);
-        defineParam(gp_4, "Global Point 4", 1.0f);
-        defineParam(gp_5, "Global Point 5", 1.0f);
-        defineParam(gp_size, "Global Size", 1.0f / 5.0f);
+        defineParam(its_1, "Intensity ~0.0", 1.0f);
+        defineParam(its_2, "Intensity ~0.2", 1.0f);
+        defineParam(its_3, "Intensity ~0.4", 1.0f);
+        defineParam(its_4, "Intensity ~0.6", 1.0f);
+        defineParam(its_5, "Intensity ~0.8", 1.0f);
+        defineParam(its_6, "Intensity ~1.0", 1.0f);
+        defineParam(its_range, "Intensity Range", 0.4f);
+
+        defineParam(red, "Red", 1.0f);
+        defineParam(yel, "Yellow", 1.0f);
+        defineParam(grn, "Green", 1.0f);
+        defineParam(cyn, "Cyan", 1.0f);
+        defineParam(blu, "Blue", 1.0f);
+        defineParam(mag, "Magenta", 1.0f);
     }
 
     void init() {
-        global_ys[0] = gp_1;
-        global_ys[1] = gp_2;
-        global_ys[2] = gp_3;
-        global_ys[3] = gp_4;
-        global_ys[4] = gp_5;
+        global_ys[0] = its_1;
+        global_ys[1] = its_2;
+        global_ys[2] = its_3;
+        global_ys[3] = its_4;
+        global_ys[4] = its_5;
+        global_ys[5] = its_6;
+
+        corner_ys[0] = red;
+        corner_ys[1] = yel;
+        corner_ys[2] = grn;
+        corner_ys[3] = cyn;
+        corner_ys[4] = blu;
+        corner_ys[5] = mag;
+    }
+
+    float lerp(float a, float b, float t) {
+        return (1.0f - t) * a + t * b;
     }
 
     float gauss_basis(float x, float s) {
         return exp(-pow(x / s, 2.0f));
     }
 
+    float wrap(float x) {
+        if (x < -0.5f) {
+            return x + 1.0f;
+        } else if (x > 0.5f) {
+            return x - 1.0f;
+        } else {
+            return x;
+        }
+    }
+
     void process() {
         SampleType(src) input = src();
+        float chroma = input.y;
+
+        for (int i = 0; i < 6; i += 1) {
+            float cx = float(i) / 6.0f;
+            float mask = gauss_basis(wrap(input.x - cx), 1.0f / 6.0f);
+            chroma = lerp(chroma, chroma * (input.z * (corner_ys[i] - 1.0f) + 1.0f), mask);
+        }
 
         float sum = 0.0f;
         float weight_sum = 0.0f;
 
-        for (int i = 0; i < 5; i += 1) {
+        // Suprisingly decent scattered data interpolation.
+        for (int i = 0; i < 6; i += 1) {
             float cx = float(i) / 5.0f;
-            float weight = gauss_basis(input.z - cx, gp_size);
+            float weight = gauss_basis(input.z - cx, its_range);
             sum += weight * global_ys[i];
             weight_sum += weight;
         }
 
-        float chroma_curve = sum / weight_sum;
-        float adjusted = input.y * chroma_curve;
+        float intensity_curve = sum / weight_sum;
+        float adjusted = chroma * intensity_curve;
 
         dst() = float4(input.x, adjusted, input.z, input.w);
     }
