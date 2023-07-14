@@ -16,18 +16,13 @@ __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
         (rgb.x + rgb.y + rgb.z) / _sqrtf(3.0f)
     };
 
-    float3 reuleaux;
-    float at = _atan2f(rotated.y, rotated.x);
+    float3 reuleaux = {
+        PI_LOCAL - _atan2f(rotated.y, -rotated.x),
+        _atan2f(_hypotf(rotated.x, rotated.y), rotated.z),
+        _fmaxf(rgb.x, _fmaxf(rgb.y, rgb.z))
+    };
 
-    if (at < 0.0f)
-        reuleaux.x = at + 2.0f * PI_LOCAL;
-    else
-        reuleaux.x = at;
-
-    reuleaux.y = _atan2f(_hypotf(rotated.x, rotated.y), rotated.z);
-    reuleaux.z = _fmaxf(rgb.x, _fmaxf(rgb.y, rgb.z));
-
-    return reuleaux * 1.0f / NORM_MULTS;
+    return reuleaux / NORM_MULTS;
 }
 
 __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {

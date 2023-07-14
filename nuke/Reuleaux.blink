@@ -45,7 +45,7 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         reuleaux.y = atan2(sqrt(pow(rotated.x, 2.0f) + pow(rotated.y, 2.0f)), rotated.z);
         reuleaux.z = max(rgb.x, max(rgb.y, rgb.z));
 
-        return reuleaux * 1.0f / norm_mults;
+        return reuleaux / norm_mults;
     }
 
     float3 reuleaux_to_rgb(float3 reuleaux) {
