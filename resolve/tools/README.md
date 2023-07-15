@@ -1,8 +1,8 @@
 # Native
 
-Operations you can do easily in Resolve.
+Operations you can do with the built-in tools.
 
-## Chroma Overall
+## ChromaOverall
 
 Use the green channel of Resolve's gamma knob on a node inside the model. Set Preserve Luminance to `0.0`.
 
