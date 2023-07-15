@@ -1,6 +1,48 @@
 // Created by:
 // https://github.com/hotgluebanjo
 // https://github.com/calvinsilly
+
+#define M_PI 3.141592653589f
+
+// Returns the f32 sign bit.
+inline bool sign_bit(float x) {
+    return ((*(int*)&x) & (1<<31)) != 0;
+}
+
+// Returns x with the sign of y.
+inline float copy_sign(float x, float y) {
+    int ix = *(int*)&x;
+    int iy = *(int*)&y;
+    ix &= 0x7fffffff;
+    ix |= iy & 0x80000000;
+    return *(float*)&ix;
+}
+
+// Sign-respecting atan2.
+// https://github.com/odin-lang/Odin/blob/master/core/math/math.odin#L1476
+float atan2_ols(float y, float x) {
+    if (y == 0.0f) {
+        if (x >= 0 && !sign_bit(x)) {
+            return copy_sign(0.0, y);
+        }
+        return copy_sign(M_PI, y);
+    }
+
+    if (x == 0.0f) {
+        return copy_sign(M_PI / 2.0f, y);
+    }
+
+    float q = atan(y / x);
+    if (x < 0.0f) {
+        if (q <= 0.0f) {
+            return q + M_PI;
+        }
+        return q - M_PI;
+    }
+
+    return q;
+}
+
 kernel Reuleaux : ImageComputationKernel<ePixelWise>
 {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
@@ -10,8 +52,6 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         bool invert;
 
     local:
-        // Watch this create a conflict somewhere.
-        float M_PI;
         float3 norm_mults;
 
     void define() {
@@ -19,7 +59,6 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
     }
 
     void init() {
-        M_PI = 3.141592653589f;
         norm_mults = float3(
             2.0f * M_PI,
             atan(sqrt(2.0f)),
@@ -34,16 +73,11 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
             (rgb.x + rgb.y + rgb.z) / sqrt(3.0f)
         );
 
-        float3 reuleaux;
-        float at = atan2(rotated.y, rotated.x);
-
-        if (at < 0.0f)
-            reuleaux.x = at + 2.0f * M_PI;
-        else
-            reuleaux.x = at;
-
-        reuleaux.y = atan2(sqrt(pow(rotated.x, 2.0f) + pow(rotated.y, 2.0f)), rotated.z);
-        reuleaux.z = max(rgb.x, max(rgb.y, rgb.z));
+        float3 reuleaux = float3(
+            M_PI - atan2_ols(rotated.y, -rotated.x),
+            atan2(sqrt(pow(rotated.x, 2.0f) + pow(rotated.y, 2.0f)), rotated.z),
+            max(rgb.x, max(rgb.y, rgb.z))
+        );
 
         return reuleaux / norm_mults;
     }
