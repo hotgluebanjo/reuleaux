@@ -88,7 +88,6 @@ kernel ChromaAtIntensity : ImageComputationKernel<ePixelWise>
         float sum = 0.0f;
         float weight_sum = 0.0f;
 
-        // Suprisingly decent scattered data interpolation.
         for (int i = 0; i < 6; i += 1) {
             float cx = float(i) / 5.0f;
             float weight = gauss_basis(input.z - cx, its_range);

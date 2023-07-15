@@ -1,14 +1,14 @@
 // https://github.com/hotgluebanjo
 
-DEFINE_UI_PARAMS(CHR_1, Chroma ~0.0, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(CHR_2, Chroma ~0.2, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(CHR_3, Chroma ~0.4, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(CHR_4, Chroma ~0.6, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(CHR_5, Chroma ~0.8, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(CHR_6, Chroma ~1.0, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(ITS_1, Intensity ~0.0, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(ITS_2, Intensity ~0.2, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(ITS_3, Intensity ~0.4, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(ITS_4, Intensity ~0.6, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(ITS_5, Intensity ~0.8, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(ITS_6, Intensity ~1.0, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 
-// Range of chroma to adjust by. Defaults to 2*1/5.
-DEFINE_UI_PARAMS(CHR_RANGE, Chroma Range, DCTLUI_SLIDER_FLOAT, 0.4, 0.0, 1.0, 0.001)
+// Range of intensity to adjust by. Defaults to 2*1/5.
+DEFINE_UI_PARAMS(ITS_RANGE, Intensity Range, DCTLUI_SLIDER_FLOAT, 0.4, 0.0, 1.0, 0.001)
 
 DEFINE_UI_PARAMS(RED, Red, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 DEFINE_UI_PARAMS(YEL, Yellow, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
@@ -36,10 +36,10 @@ __DEVICE__ float wrap(float x) {
 }
 
 __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
-    if (CHR_RANGE < 1e-6f)
+    if (ITS_RANGE < 1e-6f)
         return make_float3(p_R, p_G, p_B);
 
-    float global_ys[6] = { CHR_1, CHR_2, CHR_3, CHR_4, CHR_5, CHR_6 };
+    float global_ys[6] = { ITS_1, ITS_2, ITS_3, ITS_4, ITS_5, ITS_6 };
     float corner_ys[6] = { RED, YEL, GRN, CYN, BLU, MAG };
 
     float hue = p_R;
@@ -49,22 +49,21 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
     for (int i = 0; i < 6; i += 1) {
         float cx = float(i) / 6.0f;
         float mask = gauss_basis(wrap(hue - cx), 1.0f / 6.0f);
-        intensity = _mix(intensity, intensity * (chroma * (corner_ys[i] - 1.0f) + 1.0f), mask);
+        chroma = _mix(chroma, chroma * (intensity * (corner_ys[i] - 1.0f) + 1.0f), mask);
     }
 
     float sum = 0.0f;
     float weight_sum = 0.0f;
 
-    // Suprisingly decent scattered data interpolation.
     for (int i = 0; i < 6; i += 1) {
         float cx = float(i) / 5.0f;
-        float weight = gauss_basis(chroma - cx, CHR_RANGE);
+        float weight = gauss_basis(intensity - cx, ITS_RANGE);
         sum += weight * global_ys[i];
         weight_sum += weight;
     }
 
-    float chroma_curve = sum / weight_sum;
-    float res = intensity * chroma_curve;
+    float intensity_curve = sum / weight_sum;
+    float res = chroma * intensity_curve;
 
-    return make_float3(p_R, p_G, res);
+    return make_float3(p_R, res, p_B);
 }
