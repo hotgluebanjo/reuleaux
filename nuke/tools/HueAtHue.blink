@@ -57,12 +57,10 @@ kernel HueAtHue : ImageComputationKernel<ePixelWise>
         float hue = input.x;
         float g_sum = 0.0f;
 
-        if (invert) {
-            for (int i = 0; i < 6; i += 1)
-                g_sum += gauss_basis(wrap(hue - curve[i].x), range) * -(curve[i].y - curve[i].x);
-        } else {
-            for (int i = 0; i < 6; i += 1)
-                g_sum += gauss_basis(wrap(hue - curve[i].x), range) * (curve[i].y - curve[i].x);
+        // Swapping x and y for inverse is slightly better.
+        for (int i = 0; i < 6; i += 1) {
+            float factor = curve[i].y - curve[i].x;
+            g_sum += gauss_basis(wrap(hue - curve[i].x), range) * (invert ? -factor : factor);
         }
 
         float res = hue + g_sum;

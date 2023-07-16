@@ -6,13 +6,13 @@
 
 // Returns the f32 sign bit.
 inline bool sign_bit(float x) {
-    return ((*(int*)&x) & (1<<31)) != 0;
+    return (*(unsigned*)&x >> 31) != 0;
 }
 
 // Returns x with the sign of y.
 inline float copy_sign(float x, float y) {
-    int ix = *(int*)&x;
-    int iy = *(int*)&y;
+    unsigned ix = *(unsigned*)&x;
+    unsigned iy = *(unsigned*)&y;
     ix &= 0x7fffffff;
     ix |= iy & 0x80000000;
     return *(float*)&ix;
