@@ -31,7 +31,7 @@ kernel IntensityAtChroma : ImageComputationKernel<ePixelWise>
         defineParam(chr_4, "Chroma ~0.6", 1.0f);
         defineParam(chr_5, "Chroma ~0.8", 1.0f);
         defineParam(chr_6, "Chroma ~1.0", 1.0f);
-        defineParam(chr_range, "Chroma Range", 0.4f);
+        defineParam(chr_range, "Chroma Range", 2.0f * 1.0f / 5.0f);
 
         defineParam(red, "Red", 1.0f);
         defineParam(yel, "Yellow", 1.0f);
@@ -77,12 +77,15 @@ kernel IntensityAtChroma : ImageComputationKernel<ePixelWise>
 
     void process() {
         SampleType(src) input = src();
+
+        float hue = input.x;
+        float chroma = input.y;
         float intensity = input.z;
 
         for (int i = 0; i < 6; i += 1) {
             float cx = float(i) / 6.0f;
-            float mask = gauss_basis(wrap(input.x - cx), 1.0f / 6.0f);
-            intensity = lerp(intensity, intensity * (input.y * (corner_ys[i] - 1.0f) + 1.0f), mask);
+            float mask = gauss_basis(wrap(hue - cx), 1.0f / 6.0f);
+            intensity = lerp(intensity, intensity * (chroma * (corner_ys[i] - 1.0f) + 1.0f), mask);
         }
 
         float sum = 0.0f;
@@ -91,7 +94,7 @@ kernel IntensityAtChroma : ImageComputationKernel<ePixelWise>
         // Suprisingly decent scattered data interpolation.
         for (int i = 0; i < 6; i += 1) {
             float cx = float(i) / 5.0f;
-            float weight = gauss_basis(input.y - cx, chr_range);
+            float weight = gauss_basis(chroma - cx, chr_range);
             sum += weight * global_ys[i];
             weight_sum += weight;
         }

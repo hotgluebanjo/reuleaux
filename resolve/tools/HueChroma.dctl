@@ -61,6 +61,7 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         float cx = float(i) / 6.0f;
         float mask = gauss_basis(wrap(hue - cx), RANGE);
         float chroma_adj = INVERT ? corners[i].y : 1.0f / corners[i].y;
+
         chroma = _mix(chroma, _powf(chroma, chroma_adj), mask);
         hue += mask * (INVERT ? -corners[i].x : corners[i].x);
     }

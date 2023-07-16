@@ -52,9 +52,9 @@ kernel HueAtHue : ImageComputationKernel<ePixelWise>
     }
 
     void process() {
-        SampleType(src) input_img = src();
+        SampleType(src) input = src();
 
-        float hue = input_img.x;
+        float hue = input.x;
         float g_sum = 0.0f;
 
         if (invert) {
@@ -67,6 +67,6 @@ kernel HueAtHue : ImageComputationKernel<ePixelWise>
 
         float res = hue + g_sum;
 
-        dst() = float4(res, input_img.y, input_img.z, input_img.w);
+        dst() = float4(res, input.y, input.z, input.w);
     }
 };

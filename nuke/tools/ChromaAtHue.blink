@@ -56,10 +56,10 @@ kernel ChromaAtHue : ImageComputationKernel<ePixelWise>
     }
 
     void process() {
-        SampleType(src) input_img = src();
+        SampleType(src) input = src();
 
-        float hue = input_img.x;
-        float chroma = input_img.y;
+        float hue = input.x;
+        float chroma = input.y;
 
         for (int i = 0; i < 6; i += 1) {
             float mask = gauss_basis(wrap(hue - curve[i].x), range);
@@ -67,6 +67,6 @@ kernel ChromaAtHue : ImageComputationKernel<ePixelWise>
             chroma = lerp(chroma, pow(chroma, adj), mask);
         }
 
-        dst() = float4(input_img.x, chroma, input_img.z, input_img.w);
+        dst() = float4(input.x, chroma, input.z, input.w);
     }
 };
