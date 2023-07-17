@@ -32,8 +32,8 @@ set N5f7d400 [stack 0]
   temp_expr2 "1/(g <= atan(sqrt(2)) ? tan(g) : 3*(g - atan(sqrt(2))) + sqrt(2))"
   temp_name3 M
   temp_expr3 "max(sqrt(2)*b_ + 2*r_, sqrt(2)*b_ + sqrt(3)*g_ - r_, sqrt(2)*b_ - sqrt(3)*g_ - r_)/3"
-  expr0 "M==0 ? 0 : b*r_/M"
-  expr1 "M==0 ? 0 : b*g_/M"
+  expr0 b*r_/M
+  expr1 b*g_/M
   expr2 b
   name Reuleaux_to_OCS
   xpos 70

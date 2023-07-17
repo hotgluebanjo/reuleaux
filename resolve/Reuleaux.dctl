@@ -44,8 +44,8 @@ __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     float m = _fmaxf(d_1, _fmaxf(d_2, d_3)) / 3.0f;
 
     float3 ocs = {
-        _fabs(m) < 1e-6f ? 0.0f : reuleaux.z * cart.x / m,
-        _fabs(m) < 1e-6f ? 0.0f : reuleaux.z * cart.y / m,
+        reuleaux.z * cart.x / m,
+        reuleaux.z * cart.y / m,
         reuleaux.z
     };
 

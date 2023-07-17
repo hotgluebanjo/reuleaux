@@ -101,8 +101,8 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         float m = max(d_1, max(d_2, d_3)) / 3.0f;
 
         float3 ocs = float3(
-            fabs(m) < 1e-6f ? 0.0f : reuleaux.z * cart.x / m,
-            fabs(m) < 1e-6f ? 0.0f : reuleaux.z * cart.y / m,
+            reuleaux.z * cart.x / m,
+            reuleaux.z * cart.y / m,
             reuleaux.z
         );
 
