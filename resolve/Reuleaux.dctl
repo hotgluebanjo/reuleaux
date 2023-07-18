@@ -7,18 +7,18 @@ DEFINE_UI_PARAMS(DIRECTION, Direction, DCTLUI_COMBO_BOX, 0, {Forward, Inverse}, 
 __CONSTANT__ float PI_LOCAL = 3.141592653589f;
 
 // This is 100% going to cause complaints.
-#define NORM_MULTS make_float3(2.0f * PI_LOCAL, _atan2f(_sqrtf(2.0f), 1.0f), 1.0f)
+#define NORM_MULTS make_float3(2.0f * PI_LOCAL, _sqrtf(2.0f), 1.0f)
 
 __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
-    float3 rotated = {
+    float3 rot = {
         _sqrtf(2.0f/3.0f) * (rgb.x - (rgb.y + rgb.z) / 2.0f),
         (rgb.y - rgb.z) / _sqrtf(2.0f),
         (rgb.x + rgb.y + rgb.z) / _sqrtf(3.0f)
     };
 
     float3 reuleaux = {
-        PI_LOCAL - _atan2f(rotated.y, -rotated.x),
-        _atan2f(_hypotf(rotated.x, rotated.y), rotated.z),
+        PI_LOCAL - _atan2f(rot.y, -rot.x),
+        rot.z == 0.0f ? 0.0f : _hypotf(rot.x, rot.y) / rot.z,
         _fmaxf(rgb.x, _fmaxf(rgb.y, rgb.z))
     };
 
@@ -28,15 +28,11 @@ __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
 __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     reuleaux *= NORM_MULTS;
 
-    float3 cart;
-    cart.x = _cosf(reuleaux.x);
-    cart.y = _sinf(reuleaux.x);
-
-    // Tangent with a linear extension. Fixes asymptotic chroma.
-    if (reuleaux.y <= NORM_MULTS.y)
-        cart.z = 1.0f / _tanf(reuleaux.y);
-    else
-        cart.z = 1.0f / (3.0f * (reuleaux.y - NORM_MULTS.y) + _sqrtf(2.0f));
+    float3 cart = {
+        _cosf(reuleaux.x),
+        _sinf(reuleaux.x),
+        1.0f / reuleaux.y
+    };
 
     float d_1 = _sqrtf(2.0f) * cart.z + (2.0f * cart.x);
     float d_2 = _sqrtf(2.0f) * cart.z + _sqrtf(3.0f) * cart.y - cart.x;

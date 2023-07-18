@@ -18,7 +18,7 @@ Group {
  }
 set N5f7d400 [stack 0]
  Multiply {
-  value {{2*pi} {atan(sqrt(2))} 1 1}
+  value {{2*pi} {sqrt(2)} 1 1}
   name Denormalize
   xpos 70
   ypos 57
@@ -29,7 +29,7 @@ set N5f7d400 [stack 0]
   temp_name1 g_
   temp_expr1 sin(r)
   temp_name2 b_
-  temp_expr2 "1/(g <= atan(sqrt(2)) ? tan(g) : 3*(g - atan(sqrt(2))) + sqrt(2))"
+  temp_expr2 "1/g"
   temp_name3 M
   temp_expr3 "max(sqrt(2)*b_ + 2*r_, sqrt(2)*b_ + sqrt(3)*g_ - r_, sqrt(2)*b_ - sqrt(3)*g_ - r_)/3"
   expr0 b*r_/M
@@ -60,14 +60,14 @@ push $N5f7d400
   temp_name2 w
   temp_expr2 (r+g+b)/sqrt(3)
   expr0 "pi-atan2(v,-u)"
-  expr1 "atan2(hypot(u,v), w)"
+  expr1 "w == 0 ? 0 : hypot(u,v)/w"
   expr2 max(r,g,b)
   name RGB_to_Reuleaux
   xpos -150
   ypos 63
  }
  Multiply {
-  value {{1/(2*pi)} {1/atan(sqrt(2))} 1 1}
+  value {{1/(2*pi)} {1/sqrt(2)} 1 1}
   name Normalize
   xpos -150
   ypos 105
