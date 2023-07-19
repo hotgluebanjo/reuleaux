@@ -91,10 +91,10 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
             1.0f / reuleaux.y
         );
 
-        float d_1 = sqrt(2.0f) * cart.z + (2.0f * cart.x);
-        float d_2 = sqrt(2.0f) * cart.z + sqrt(3.0f) * cart.y - cart.x;
-        float d_3 = sqrt(2.0f) * cart.z - sqrt(3.0f) * cart.y - cart.x;
-        float m = max(d_1, max(d_2, d_3)) / 3.0f;
+        float d_1 = cart.z + sqrt(2.0f)*cart.x;
+        float d_2 = cart.z + sqrt(3.0f/2.0f)*cart.y - cart.x/sqrt(2.0f);
+        float d_3 = cart.z - sqrt(3.0f/2.0f)*cart.y - cart.x/sqrt(2.0f);
+        float m = max(d_1, max(d_2, d_3)) / sqrt(3.0f);
 
         float3 ocs = float3(
             reuleaux.z * cart.x / m,
@@ -103,21 +103,21 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         );
 
         float3 rgb;
-        bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || ocs.y <= -sqrt(3.0f) * ocs.x);
-        bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0 || ocs.y > sqrt(3.0f) * ocs.x);
+        bool case_1 = ocs.x <= -ocs.y/sqrt(3.0f) && ocs.y <= 0.0f;
+        bool case_2 = ocs.x <= ocs.y/sqrt(3.0f) && ocs.y > 0.0f;
 
         if (case_1) {
-            rgb.x = ocs.y / sqrt(3.0f) + ocs.x + ocs.z;
-            rgb.y = 2.0f / sqrt(3.0f) * ocs.y + ocs.z;
+            rgb.x = sqrt(3.0f/2.0f)*ocs.x + ocs.y/sqrt(2.0f) + ocs.z;
+            rgb.y = sqrt(2.0f)*ocs.y + ocs.z;
             rgb.z = ocs.z;
         } else if (case_2) {
-            rgb.x = -ocs.y / sqrt(3.0f) + ocs.x + ocs.z;
+            rgb.x = sqrt(3.0f/2.0f)*ocs.x - ocs.y/sqrt(2.0f) + ocs.z;
             rgb.y = ocs.z;
-            rgb.z = -(2.0f / sqrt(3.0f)) * ocs.y + ocs.z;
+            rgb.z = -sqrt(2.0f)*ocs.y + ocs.z;
         } else {
             rgb.x = ocs.z;
-            rgb.y = ocs.y / sqrt(3.0f) - ocs.x + ocs.z;
-            rgb.z = -ocs.y / sqrt(3.0f) - ocs.x + ocs.z;
+            rgb.y = -sqrt(3.0f/2.0f)*ocs.x + ocs.y/sqrt(2.0f) + ocs.z;
+            rgb.z = -sqrt(3.0f/2.0f)*ocs.x - ocs.y/sqrt(2.0f) + ocs.z;
         }
 
         return rgb;

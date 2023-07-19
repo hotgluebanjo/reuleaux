@@ -31,7 +31,7 @@ set N5f7d400 [stack 0]
   temp_name2 b_
   temp_expr2 "1/g"
   temp_name3 M
-  temp_expr3 "max(sqrt(2)*b_ + 2*r_, sqrt(2)*b_ + sqrt(3)*g_ - r_, sqrt(2)*b_ - sqrt(3)*g_ - r_)/3"
+  temp_expr3 "max(b_ + sqrt(2)*r_, b_ + sqrt(3/2)*g_ - r_/sqrt(2), b_ - sqrt(3/2)*g_ - r_/sqrt(2))/sqrt(3)"
   expr0 b*r_/M
   expr1 b*g_/M
   expr2 b
@@ -40,13 +40,13 @@ set N5f7d400 [stack 0]
   ypos 111
  }
  Expression {
-  temp_name0 if1
-  temp_expr0 "(g <= 0 || r > 0) && (r <= 0 || g <= -sqrt(3)*r)"
-  temp_name1 if2
-  temp_expr1 "(g > 0 || r > 0) && (r <=0 || g > sqrt(3)*r)"
-  expr0 "if1 ? g/sqrt(3)+r+b : (if2 ? -g/sqrt(3)+r+b : b)"
-  expr1 "if1 ? (2/sqrt(3))*g+b : (if2 ? b : g/sqrt(3)-r+b)"
-  expr2 "if1 ? b : (if2 ? -(2/sqrt(3))*g+b : -g/sqrt(3)-r+b)"
+  temp_name0 if
+  temp_expr0 "r <= -g/sqrt(3) && g <= 0"
+  temp_name1 if_
+  temp_expr1 "r <= g/sqrt(3) && g > 0"
+  expr0 "if ? sqrt(3/2)*r + g/sqrt(2) + b : (if_ ? sqrt(3/2)*r - g/sqrt(2) + b : b)"
+  expr1 "if ? sqrt(2)*g + b : (if_ ? b : -sqrt(3/2)*r + g/sqrt(2) + b)"
+  expr2 "if ? b : (if_ ? -sqrt(2)*g + b : -sqrt(3/2)*r - g/sqrt(2) + b)"
   name OCS_to_RGB
   xpos 70
   ypos 159

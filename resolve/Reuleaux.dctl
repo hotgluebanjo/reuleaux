@@ -34,10 +34,10 @@ __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
         1.0f / reuleaux.y
     };
 
-    float d_1 = _sqrtf(2.0f) * cart.z + (2.0f * cart.x);
-    float d_2 = _sqrtf(2.0f) * cart.z + _sqrtf(3.0f) * cart.y - cart.x;
-    float d_3 = _sqrtf(2.0f) * cart.z - _sqrtf(3.0f) * cart.y - cart.x;
-    float m = _fmaxf(d_1, _fmaxf(d_2, d_3)) / 3.0f;
+    float d_1 = cart.z + _sqrtf(2.0f)*cart.x;
+    float d_2 = cart.z + _sqrtf(3.0f/2.0f)*cart.y - cart.x/_sqrtf(2.0f);
+    float d_3 = cart.z - _sqrtf(3.0f/2.0f)*cart.y - cart.x/_sqrtf(2.0f);
+    float m = _fmaxf(d_1, _fmaxf(d_2, d_3)) / _sqrtf(3.0f);
 
     float3 ocs = {
         reuleaux.z * cart.x / m,
@@ -46,21 +46,21 @@ __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     };
 
     float3 rgb;
-    bool case_1 = (ocs.y <= 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0f || ocs.y <= -_sqrtf(3.0f) * ocs.x);
-    bool case_2 = (ocs.y > 0.0f || ocs.x > 0.0f) && (ocs.x <= 0.0 || ocs.y > _sqrtf(3.0f) * ocs.x);
+    bool case_1 = ocs.x <= -ocs.y/_sqrtf(3.0f) && ocs.y <= 0.0f;
+    bool case_2 = ocs.x <= ocs.y/_sqrtf(3.0f) && ocs.y > 0.0f;
 
     if (case_1) {
-        rgb.x = ocs.y / _sqrtf(3.0f) + ocs.x + ocs.z;
-        rgb.y = 2.0f / _sqrtf(3.0f) * ocs.y + ocs.z;
+        rgb.x = _sqrtf(3.0f/2.0f)*ocs.x + ocs.y/_sqrtf(2.0f) + ocs.z;
+        rgb.y = _sqrtf(2.0f)*ocs.y + ocs.z;
         rgb.z = ocs.z;
     } else if (case_2) {
-        rgb.x = -ocs.y / _sqrtf(3.0f) + ocs.x + ocs.z;
+        rgb.x = _sqrtf(3.0f/2.0f)*ocs.x - ocs.y/_sqrtf(2.0f) + ocs.z;
         rgb.y = ocs.z;
-        rgb.z = -(2.0f / _sqrtf(3.0f)) * ocs.y + ocs.z;
+        rgb.z = -_sqrtf(2.0f)*ocs.y + ocs.z;
     } else {
         rgb.x = ocs.z;
-        rgb.y = ocs.y / _sqrtf(3.0f) - ocs.x + ocs.z;
-        rgb.z = -ocs.y / _sqrtf(3.0f) - ocs.x + ocs.z;
+        rgb.y = -_sqrtf(3.0f/2.0f)*ocs.x + ocs.y/_sqrtf(2.0f) + ocs.z;
+        rgb.z = -_sqrtf(3.0f/2.0f)*ocs.x - ocs.y/_sqrtf(2.0f) + ocs.z;
     }
 
     return rgb;
