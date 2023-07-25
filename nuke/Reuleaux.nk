@@ -24,16 +24,10 @@ set N5f7d400 [stack 0]
   ypos 57
  }
  Expression {
-  temp_name0 r_
-  temp_expr0 cos(r)
-  temp_name1 g_
-  temp_expr1 sin(r)
-  temp_name2 b_
-  temp_expr2 "1/g"
-  temp_name3 M
-  temp_expr3 "max(b_ + sqrt(2)*r_, b_ + sqrt(3/2)*g_ - r_/sqrt(2), b_ - sqrt(3/2)*g_ - r_/sqrt(2))/sqrt(3)"
-  expr0 b*r_/M
-  expr1 b*g_/M
+  temp_name0 M
+  temp_expr0 "sqrt(2)*max(cos(r), cos(r + 2*pi/3), cos(r - 2*pi/3)) + 1/g"
+  expr0 b*cos(r)/M
+  expr1 b*sin(r)/M
   expr2 b
   name Reuleaux_to_OCS
   xpos 70
@@ -43,10 +37,10 @@ set N5f7d400 [stack 0]
   temp_name0 if
   temp_expr0 "r <= -g/sqrt(3) && g <= 0"
   temp_name1 if_
-  temp_expr1 "r <= g/sqrt(3) && g > 0"
-  expr0 "if ? sqrt(3/2)*r + g/sqrt(2) + b : (if_ ? sqrt(3/2)*r - g/sqrt(2) + b : b)"
-  expr1 "if ? sqrt(2)*g + b : (if_ ? b : -sqrt(3/2)*r + g/sqrt(2) + b)"
-  expr2 "if ? b : (if_ ? -sqrt(2)*g + b : -sqrt(3/2)*r - g/sqrt(2) + b)"
+  temp_expr1 "r < g/sqrt(3)"
+  expr0 "if ? 3*r/sqrt(2) + sqrt(3/2)*g + b : (if_ ? 3*r/sqrt(2) - sqrt(3/2)*g + b : b)"
+  expr1 "if ? sqrt(6)*g + b : (if_ ? b : -3*r/sqrt(2) + sqrt(3/2)*g + b)"
+  expr2 "if ? b : (if_ ? -sqrt(6)*g + b : -3*r/sqrt(2) - sqrt(3/2)*g + b)"
   name OCS_to_RGB
   xpos 70
   ypos 159
@@ -54,11 +48,11 @@ set N5f7d400 [stack 0]
 push $N5f7d400
  Expression {
   temp_name0 u
-  temp_expr0 sqrt(2/3)*(r-(g+b)/2)
+  temp_expr0 sqrt(2)/6*(2*r-g-b)
   temp_name1 v
-  temp_expr1 (g-b)/sqrt(2)
+  temp_expr1 (g-b)/sqrt(6)
   temp_name2 w
-  temp_expr2 (r+g+b)/sqrt(3)
+  temp_expr2 (r+g+b)/3
   expr0 "pi-atan2(v,-u)"
   expr1 "w == 0 ? 0 : hypot(u,v)/w"
   expr2 max(r,g,b)

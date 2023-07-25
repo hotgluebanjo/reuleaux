@@ -11,9 +11,9 @@ __CONSTANT__ float PI_LOCAL = 3.141592653589f;
 
 __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
     float3 rot = {
-        _sqrtf(2.0f/3.0f) * (rgb.x - (rgb.y + rgb.z) / 2.0f),
-        (rgb.y - rgb.z) / _sqrtf(2.0f),
-        (rgb.x + rgb.y + rgb.z) / _sqrtf(3.0f)
+        _sqrtf(2.0f)/6.0f * (2.0f*rgb.x - rgb.y - rgb.z),
+        (rgb.y - rgb.z) / _sqrtf(6.0f),
+        (rgb.x + rgb.y + rgb.z) / 3.0f
     };
 
     float3 reuleaux = {
@@ -28,39 +28,30 @@ __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
 __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     reuleaux *= NORM_MULTS;
 
-    float3 cart = {
-        _cosf(reuleaux.x),
-        _sinf(reuleaux.x),
-        1.0f / reuleaux.y
-    };
-
-    float d_1 = cart.z + _sqrtf(2.0f)*cart.x;
-    float d_2 = cart.z + _sqrtf(3.0f/2.0f)*cart.y - cart.x/_sqrtf(2.0f);
-    float d_3 = cart.z - _sqrtf(3.0f/2.0f)*cart.y - cart.x/_sqrtf(2.0f);
-    float m = _fmaxf(d_1, _fmaxf(d_2, d_3)) / _sqrtf(3.0f);
+    float m = NORM_MULTS.y * _fmaxf(_cosf(reuleaux.x), _fmaxf(_cosf(reuleaux.x + NORM_MULTS.x/3.0f), _cosf_(reuleaux.x - NORM_MULTS.x/3.0f))) + 1/reuleaux.y;
 
     float3 ocs = {
-        reuleaux.z * cart.x / m,
-        reuleaux.z * cart.y / m,
+        reuleaux.z * _cosf(reuleaux.x) / m,
+        reuleaux.z * _sinf(reuleaux.x) / m,
         reuleaux.z
     };
 
     float3 rgb;
     bool case_1 = ocs.x <= -ocs.y/_sqrtf(3.0f) && ocs.y <= 0.0f;
-    bool case_2 = ocs.x <= ocs.y/_sqrtf(3.0f) && ocs.y > 0.0f;
+    bool case_2 = ocs.x < ocs.y/_sqrtf(3.0f);
 
     if (case_1) {
-        rgb.x = _sqrtf(3.0f/2.0f)*ocs.x + ocs.y/_sqrtf(2.0f) + ocs.z;
-        rgb.y = _sqrtf(2.0f)*ocs.y + ocs.z;
+        rgb.x = 3.0f/_sqrtf(2.0f)*ocs.x + _sqrtf(3.0f/2.0f)*ocs.y + ocs.z;
+        rgb.y = _sqrtf(6.0f)*ocs.y + ocs.z;
         rgb.z = ocs.z;
     } else if (case_2) {
-        rgb.x = _sqrtf(3.0f/2.0f)*ocs.x - ocs.y/_sqrtf(2.0f) + ocs.z;
+        rgb.x = 3.0f/_sqrtf(2.0f)*ocs.x - _sqrtf(3.0f/2.0f)*ocs.y + ocs.z;
         rgb.y = ocs.z;
-        rgb.z = -_sqrtf(2.0f)*ocs.y + ocs.z;
+        rgb.z = -_sqrtf(6.0f)*ocs.y + ocs.z;
     } else {
         rgb.x = ocs.z;
-        rgb.y = -_sqrtf(3.0f/2.0f)*ocs.x + ocs.y/_sqrtf(2.0f) + ocs.z;
-        rgb.z = -_sqrtf(3.0f/2.0f)*ocs.x - ocs.y/_sqrtf(2.0f) + ocs.z;
+        rgb.y = -3.0f/_sqrtf(2.0f)*ocs.x + _sqrtf(3.0f/2.0f)*ocs.y + ocs.z;
+        rgb.z = -3.0f/_sqrtf(2.0f)*ocs.x - _sqrtf(3.0f/2.0f)*ocs.y + ocs.z;
     }
 
     return rgb;
