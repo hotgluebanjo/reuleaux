@@ -28,7 +28,15 @@ __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
 __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     reuleaux *= NORM_MULTS;
 
-    float m = NORM_MULTS.y * _fmaxf(_cosf(reuleaux.x), _fmaxf(_cosf(reuleaux.x + NORM_MULTS.x/3.0f), _cosf_(reuleaux.x - NORM_MULTS.x/3.0f))) + 1/reuleaux.y;
+    float m = NORM_MULTS.y
+        * _fmaxf(
+            _cosf(reuleaux.x),
+            _fmaxf(
+                _cosf(reuleaux.x + NORM_MULTS.x/3.0f),
+                _cosf(reuleaux.x - NORM_MULTS.x/3.0f)
+            )
+        )
+        + 1.0f/reuleaux.y;
 
     float3 ocs = {
         reuleaux.z * _cosf(reuleaux.x) / m,
