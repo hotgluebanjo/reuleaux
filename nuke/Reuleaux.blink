@@ -85,7 +85,15 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
     float3 reuleaux_to_rgb(float3 reuleaux) {
         reuleaux *= norm_mults;
 
-        float m = norm_mults.y * max(cos(reuleaux.x), max(cos(reuleaux.x + norm_mults.x/3.0f), cos(reuleaux.x - norm_mults.x/3.0f))) + 1/reuleaux.y;
+        float m = norm_mults.y
+            * max(
+                cos(reuleaux.x),
+                max(
+                    cos(reuleaux.x + norm_mults.x/3.0f),
+                    cos(reuleaux.x - norm_mults.x/3.0f)
+                )
+            )
+            + 1.0f/reuleaux.y;
 
         float3 ocs = float3(
             reuleaux.z * cos(reuleaux.x) / m,
