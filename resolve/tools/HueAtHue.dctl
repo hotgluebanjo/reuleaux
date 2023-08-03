@@ -1,0 +1,87 @@
+// https://github.com/hotgluebanjo
+// https://github.com/calvinsilly
+//
+// Uses linear interpolation instead of a Gaussian basis sum,
+// making it fully invertible. Conceptually similar to Tetra.
+//
+// RESOLVE USERS: If unsure of how to use this tool, try to only adjust the `y` values,
+// or preferably use the ReuleauxUser tool.
+
+// 6 hue + 3 anchor.
+#define N_POINTS 9
+
+DEFINE_UI_PARAMS(RED_X, Red x, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(RED_Y, Red y, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(YEL_X, Yellow x, DCTLUI_SLIDER_FLOAT, 0.166, 0.0, 0.333, 0.001)
+DEFINE_UI_PARAMS(YEL_Y, Yellow y, DCTLUI_SLIDER_FLOAT, 0.166, 0.0, 0.333, 0.001)
+
+DEFINE_UI_PARAMS(GRN_X, Green x, DCTLUI_SLIDER_FLOAT, 0.333, 0.166, 0.5, 0.001)
+DEFINE_UI_PARAMS(GRN_Y, Green y, DCTLUI_SLIDER_FLOAT, 0.333, 0.166, 0.5, 0.001)
+
+DEFINE_UI_PARAMS(CYN_X, Cyan x, DCTLUI_SLIDER_FLOAT, 0.5, 0.333, 0.666, 0.001)
+DEFINE_UI_PARAMS(CYN_Y, Cyan y, DCTLUI_SLIDER_FLOAT, 0.5, 0.333, 0.666, 0.001)
+
+DEFINE_UI_PARAMS(BLU_X, Blue x, DCTLUI_SLIDER_FLOAT, 0.666, 0.5, 0.833, 0.001)
+DEFINE_UI_PARAMS(BLU_Y, Blue y, DCTLUI_SLIDER_FLOAT, 0.666, 0.5, 0.833, 0.001)
+
+DEFINE_UI_PARAMS(MAG_X, Magenta x, DCTLUI_SLIDER_FLOAT, 0.833, 0.666, 1.0, 0.001)
+DEFINE_UI_PARAMS(MAG_Y, Magenta y, DCTLUI_SLIDER_FLOAT, 0.833, 0.666, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    float2 curve[N_POINTS];
+    float2 red_user = make_float2(RED_X, RED_Y);
+
+    // Red point may refer to hues backward from 1=0, where, e.g., 0.9 equals -0.1.
+    // Wrapping recenters values past the halfway point so that either input is valid.
+    if (RED_X < 0.5f && RED_Y < 0.5f) {
+        curve[1] = red_user;
+        curve[7] = red_user + 1.0f;
+    } else if (RED_X < 0.5f && RED_Y >= 0.5f) {
+        curve[1] = make_float2(RED_X, RED_Y - 1.0f);
+        curve[7] = make_float2(RED_X + 1.0f, RED_Y);
+    } else if (RED_X >= 0.5f && RED_Y < 0.5f) {
+        curve[1] = make_float2(RED_X - 1.0f, RED_Y);
+        curve[7] = make_float2(RED_X, RED_Y + 1.0f);
+    } else {
+        curve[1] = red_user - 1.0f;
+        curve[7] = red_user;
+    }
+
+    curve[2] = make_float2(YEL_X, YEL_Y);
+    curve[3] = make_float2(GRN_X, GRN_Y);
+    curve[4] = make_float2(CYN_X, CYN_Y);
+    curve[5] = make_float2(BLU_X, BLU_Y);
+    curve[6] = make_float2(MAG_X, MAG_Y);
+
+    // Start and end anchors.
+    curve[0] = curve[6] - 1.0f;
+    curve[8] = curve[2] + 1.0f;
+
+    if (INVERT) {
+        for (int i = 0; i < N_POINTS; i += 1) {
+            curve[i] = make_float2(curve[i].y, curve[i].x);
+        }
+    }
+
+    float hue = p_R;
+    float res = 0.0f;
+
+    if (hue <= curve[0].x) {
+        res = curve[0].y;
+    } else if (hue >= curve[N_POINTS - 1].x) {
+        res = curve[N_POINTS - 1].y;
+    } else {
+        for (int i = 0; i < N_POINTS - 1; i += 1) {
+            if (curve[i].x <= hue && hue < curve[i + 1].x) {
+                float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
+                res = _mix(curve[i].y, curve[i + 1].y, slope);
+                break;
+            }
+        }
+    }
+
+    return make_float3(res, p_G, p_B);
+}

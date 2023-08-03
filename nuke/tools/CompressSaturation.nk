@@ -1,0 +1,51 @@
+set cut_paste_input [stack 0]
+version 14.0 v5
+push $cut_paste_input
+Group {
+ name CompressSaturation
+ selected true
+ xpos 20
+ ypos -282
+ addUserKnob {20 User}
+ addUserKnob {7 compression}
+ addUserKnob {7 smoothness R 0 3}
+ smoothness 1
+ addUserKnob {6 invert +STARTLINE}
+}
+ Input {
+  inputs 0
+  name Input1
+  xpos 70
+  ypos -249
+ }
+set N36ce000 [stack 0]
+ Expression {
+  temp_name0 bc
+  temp_expr0 "1 - compression"
+  expr1 "g < bc ? g : (g - bc) / (smoothness - g + bc) * smoothness + bc"
+  name Inverse
+  xpos 180
+  ypos -177
+ }
+push $N36ce000
+ Expression {
+  temp_name0 bc
+  temp_expr0 "1 - compression"
+  expr1 "g < bc ? g : (g - bc) / (smoothness + g - bc) * smoothness + bc"
+  name Forward
+  xpos -40
+  ypos -177
+ }
+ Switch {
+  inputs 2
+  which {{invert}}
+  name Switch1
+  xpos 70
+  ypos -81
+ }
+ Output {
+  name Output1
+  xpos 70
+  ypos -33
+ }
+end_group

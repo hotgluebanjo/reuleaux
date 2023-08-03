@@ -1,0 +1,93 @@
+// https://github.com/hotgluebanjo
+//
+// Matches saturation `y` to `z` at provided hue center `x`.
+// `y` and `z` values must be in domain 0-1.
+//
+// The labels don't make sense, but this is the cleanest layout.
+// Custom types won't work here. Check the DCTL for a better
+// implementation.
+
+// 6 hue + 1 anchor. Wrapping so far hasn't been necessary.
+#define N_POINTS 7
+
+kernel SaturationAtHueAuto : ImageComputationKernel<ePixelWise>
+{
+    Image<eRead, eAccessPoint, eEdgeClamped> src;
+    Image<eWrite> dst;
+
+    param:
+        float3 red;
+        float3 yel;
+        float3 grn;
+        float3 cyn;
+        float3 blu;
+        float3 mag;
+        bool invert;
+
+    local:
+        float3 params_list[6];
+        float2 curve[N_POINTS];
+
+    void define() {
+        defineParam(red, "Red", float3(0.0f, 0.5f, 0.5f));
+        defineParam(yel, "Yellow", float3(1.0f / 6.0f, 0.5f, 0.5f));
+        defineParam(grn, "Green", float3(2.0f / 6.0f, 0.5f, 0.5f));
+        defineParam(cyn, "Cyan", float3(3.0f / 6.0f, 0.5f, 0.5f));
+        defineParam(blu, "Blue", float3(4.0f / 6.0f, 0.5f, 0.5f));
+        defineParam(mag, "Magenta", float3(5.0f / 6.0f, 0.5f, 0.5f));
+        defineParam(invert, "Invert", false);
+    }
+
+    void init() {
+        params_list[0] = red;
+        params_list[1] = yel;
+        params_list[2] = grn;
+        params_list[3] = cyn;
+        params_list[4] = blu;
+        params_list[5] = mag;
+
+        for (int i = 0; i < N_POINTS - 1; i += 1) {
+            curve[i].x = params_list[i].x;
+
+            if (0.0f < params_list[i].y && params_list[i].y < 1.0f &&
+                0.0f < params_list[i].z && params_list[i].z < 1.0f)
+            {
+                curve[i].y = log(params_list[i].y) / log(params_list[i].z);
+            } else {
+                curve[i].y = 1.0f;
+            }
+        }
+
+        // Red top anchor.
+        curve[6] = float2(curve[0].x + 1.0f, curve[0].y);
+    }
+
+    float lerp(float a, float b, float t) {
+        return (1.0f - t) * a + t * b;
+    }
+
+    void process() {
+        SampleType(src) input = src();
+
+        float hue = input.x;
+        float hue_adj = 0.0f;
+
+        if (hue <= curve[0].x) {
+            hue_adj = curve[0].y;
+        } else if (hue >= curve[N_POINTS - 1].x) {
+            hue_adj = curve[N_POINTS - 1].y;
+        } else {
+            for (int i = 0; i < N_POINTS - 1; i += 1) {
+                if (curve[i].x <= hue && hue < curve[i + 1].x) {
+                    float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
+                    hue_adj = lerp(curve[i].y, curve[i + 1].y, slope);
+                    break;
+                }
+            }
+        }
+
+        float res = pow(input.y, invert ? hue_adj : 1.0f / hue_adj);
+
+        dst() = float4(input.x, res, input.z, input.w);
+    }
+};

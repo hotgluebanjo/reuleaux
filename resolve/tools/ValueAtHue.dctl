@@ -1,0 +1,69 @@
+// https://github.com/hotgluebanjo
+// https://github.com/calvinsilly
+//
+// This simultaneously attenuates.
+
+#define N_POINTS 7
+
+// TODO: Wrapping of red hue < 0 > 0.5.
+
+DEFINE_UI_PARAMS(RED_HUE, Red Hue, DCTLUI_SLIDER_FLOAT, 0.0, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(RED_VALUE, Red Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(YEL_HUE, Yellow Hue, DCTLUI_SLIDER_FLOAT, 0.166, 0.0, 0.333, 0.001)
+DEFINE_UI_PARAMS(YEL_VALUE, Yellow Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(GRN_HUE, Green Hue, DCTLUI_SLIDER_FLOAT, 0.333, 0.166, 0.5, 0.001)
+DEFINE_UI_PARAMS(GRN_VALUE, Green Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(CYN_HUE, Cyan Hue, DCTLUI_SLIDER_FLOAT, 0.5, 0.333, 0.666, 0.001)
+DEFINE_UI_PARAMS(CYN_VALUE, Cyan Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(BLU_HUE, Blue Hue, DCTLUI_SLIDER_FLOAT, 0.666, 0.5, 0.8333, 0.001)
+DEFINE_UI_PARAMS(BLU_VALUE, Blue Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(MAG_HUE, Magenta Hue, DCTLUI_SLIDER_FLOAT, 0.833, 0.666, 1.0, 0.001)
+DEFINE_UI_PARAMS(MAG_VALUE, Magenta Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    float2 curve[N_POINTS] = {
+        {RED_HUE, RED_VALUE},
+        {YEL_HUE, YEL_VALUE},
+        {GRN_HUE, GRN_VALUE},
+        {CYN_HUE, CYN_VALUE},
+        {BLU_HUE, BLU_VALUE},
+        {MAG_HUE, MAG_VALUE},
+        {RED_HUE + 1.0f, RED_VALUE}
+    };
+
+    float hue = p_R;
+    float saturation = p_G;
+    float value = p_B;
+    float hue_adj = 0.0f;
+
+    if (hue <= curve[0].x) {
+        hue_adj = curve[0].y;
+    } else if (hue >= curve[N_POINTS - 1].x) {
+        hue_adj = curve[N_POINTS - 1].y;
+    } else {
+        for (int i = 0; i < N_POINTS - 1; i += 1) {
+            if (curve[i].x <= hue && hue < curve[i + 1].x) {
+                float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
+                hue_adj = _mix(curve[i].y, curve[i + 1].y, slope);
+                break;
+            }
+        }
+    }
+
+    float factor = _fmaxf(1.0f - saturation * hue_adj, 1e-6f);
+    float res;
+
+    if (INVERT)
+        res = value * factor;
+    else
+        res = value / factor;
+
+    return make_float3(p_R, p_G, res);
+}

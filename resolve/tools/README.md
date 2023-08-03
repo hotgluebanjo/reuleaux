@@ -1,11 +1,11 @@
 # Native
 
-Operations you can do with the built-in tools.
+Mostly uninvertible operations you can do with built-in tools.
 
-## ChromaOverall
+## Overall Saturation
 
 Use the green channel of Resolve's gamma knob on a node inside the model. Set Preserve Luminance to `0.0`.
 
-## HueAtHue and ChromaAtChroma
+## HueAtHue and SaturationAtSaturation
 
 Use the red and green channels of Resolve's curves on a node inside the model. Set Preserve Luminance to `0.0`.

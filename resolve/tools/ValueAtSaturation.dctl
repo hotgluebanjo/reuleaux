@@ -1,0 +1,63 @@
+// https://github.com/hotgluebanjo
+
+DEFINE_UI_PARAMS(POINT_1_X, Point 1 x, DCTLUI_SLIDER_FLOAT, 0.0, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(POINT_1_Y, Point 1 y, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(POINT_2_X, Point 2 x, DCTLUI_SLIDER_FLOAT, 0.2, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(POINT_2_Y, Point 2 y, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(POINT_3_X, Point 3 x, DCTLUI_SLIDER_FLOAT, 0.4, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(POINT_3_Y, Point 3 y, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(POINT_4_X, Point 4 x, DCTLUI_SLIDER_FLOAT, 0.6, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(POINT_4_Y, Point 4 y, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(POINT_5_X, Point 5 x, DCTLUI_SLIDER_FLOAT, 0.8, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(POINT_5_Y, Point 5 y, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(POINT_6_X, Point 6 x, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(POINT_6_Y, Point 6 y, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+// Range of saturation to adjust by. Defaults to 1/5.
+DEFINE_UI_PARAMS(RANGE, Range, DCTLUI_SLIDER_FLOAT, 0.2, 0.0, 1.0, 0.001)
+
+DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
+
+__DEVICE__ inline float _sqrf(float x) {
+    return x * x;
+}
+
+__DEVICE__ float gauss_basis(float x, float s) {
+    return _expf(-_sqrf(x / s));
+}
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    if (RANGE < 1e-6f)
+        return make_float3(p_R, p_G, p_B);
+
+    float2 curve[6] = {
+        {POINT_1_X, POINT_1_Y},
+        {POINT_2_X, POINT_2_Y},
+        {POINT_3_X, POINT_3_Y},
+        {POINT_4_X, POINT_4_Y},
+        {POINT_5_X, POINT_5_Y},
+        {POINT_6_X, POINT_6_Y}
+    };
+
+    float saturation = p_G;
+    float value = p_B;
+
+    float sum = 0.0f;
+    float weight_sum = 0.0f;
+
+    for (int i = 0; i < 6; i += 1) {
+        float weight = gauss_basis(saturation - curve[i].x, RANGE);
+        sum += weight * curve[i].y;
+        weight_sum += weight;
+    }
+
+    float saturation_curve = _fmaxf(sum / weight_sum, 1e-6f);
+    float adjusted = INVERT ? value / saturation_curve : value * saturation_curve;
+
+    return make_float3(p_R, p_G, adjusted);
+}

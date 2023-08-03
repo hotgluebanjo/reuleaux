@@ -6,7 +6,7 @@ An HSV-like color model similar to one [Steve Yedlin, ASC](https://yedlin.net/) 
 
 Massive thanks to [calvinsilly](https://github.com/calvinsilly) for solving the inverse, and whose collaborative efforts this project would not exist without.
 
-Several tools are included. Most are not entirely invertible. Ideally they'll provide a launch pad for others to create their own. As with any HCI-type model, there are many possibilities.
+Several tools are included. Ideally they'll provide a launch pad for others to create their own. As with any HSV-type model, there are many possibilities.
 
 Note: BlinkScript was made available to Nuke Non-commercial users in version 14.0v3, so the BlinkScripts will work there. Regardless, prefer the `.nk` version of the model itself.
 

@@ -1,0 +1,84 @@
+// https://github.com/hotgluebanjo
+
+DEFINE_UI_PARAMS(RED_HUE, Red Hue Center, DCTLUI_VALUE_BOX, 0.0)
+DEFINE_UI_PARAMS(RED_X, Red Saturation x, DCTLUI_VALUE_BOX, 0.5)
+DEFINE_UI_PARAMS(RED_Y, Red Saturation y, DCTLUI_VALUE_BOX, 0.5)
+
+DEFINE_UI_PARAMS(YEL_HUE, Yellow Hue Center, DCTLUI_VALUE_BOX, 0.166666)
+DEFINE_UI_PARAMS(YEL_X, Yellow Saturation x, DCTLUI_VALUE_BOX, 0.5)
+DEFINE_UI_PARAMS(YEL_Y, Yellow Saturation y, DCTLUI_VALUE_BOX, 0.5)
+
+DEFINE_UI_PARAMS(GRN_HUE, Green Hue Center, DCTLUI_VALUE_BOX, 0.333333)
+DEFINE_UI_PARAMS(GRN_X, Green Saturation x, DCTLUI_VALUE_BOX, 0.5)
+DEFINE_UI_PARAMS(GRN_Y, Green Saturation y, DCTLUI_VALUE_BOX, 0.5)
+
+DEFINE_UI_PARAMS(CYN_HUE, Cyan Hue Center, DCTLUI_VALUE_BOX, 0.5)
+DEFINE_UI_PARAMS(CYN_X, Cyan Saturation x, DCTLUI_VALUE_BOX, 0.5)
+DEFINE_UI_PARAMS(CYN_Y, Cyan Saturation y, DCTLUI_VALUE_BOX, 0.5)
+
+DEFINE_UI_PARAMS(BLU_HUE, Blue Hue Center, DCTLUI_VALUE_BOX, 0.666666)
+DEFINE_UI_PARAMS(BLU_X, Blue Saturation x, DCTLUI_VALUE_BOX, 0.5)
+DEFINE_UI_PARAMS(BLU_Y, Blue Saturation y, DCTLUI_VALUE_BOX, 0.5)
+
+DEFINE_UI_PARAMS(MAG_HUE, Magenta Hue Center, DCTLUI_VALUE_BOX, 0.833333)
+DEFINE_UI_PARAMS(MAG_X, Magenta Saturation x, DCTLUI_VALUE_BOX, 0.5)
+DEFINE_UI_PARAMS(MAG_Y, Magenta Saturation y, DCTLUI_VALUE_BOX, 0.5)
+
+DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
+
+#define N_POINTS 7
+
+typedef struct {
+    float hue_center;
+    float2 point;
+} AutoPoint;
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    AutoPoint params_list[6] = {
+        {RED_HUE, {RED_X, RED_Y}},
+        {YEL_HUE, {YEL_X, YEL_Y}},
+        {GRN_HUE, {GRN_X, GRN_Y}},
+        {CYN_HUE, {CYN_X, CYN_Y}},
+        {BLU_HUE, {BLU_X, BLU_Y}},
+        {MAG_HUE, {MAG_X, MAG_Y}},
+    };
+
+    float2 curve[N_POINTS];
+
+    for (int i = 0; i < N_POINTS - 1; i += 1) {
+        curve[i].x = params_list[i].hue_center;
+
+        if (0.0f < params_list[i].point.x && params_list[i].point.x < 1.0f &&
+            0.0f < params_list[i].point.y && params_list[i].point.y < 1.0f)
+        {
+            curve[i].y = _logf(params_list[i].point.x) / _logf(params_list[i].point.y);
+        } else {
+            curve[i].y = 1.0f;
+        }
+    }
+
+    // Red top anchor.
+    curve[6] = make_float2(curve[0].x + 1.0f, curve[0].y);
+
+    float hue = p_R;
+    float saturation = p_G;
+    float hue_adj = 0.0f;
+
+    if (hue <= curve[0].x) {
+        hue_adj = curve[0].y;
+    } else if (hue >= curve[N_POINTS - 1].x) {
+        hue_adj = curve[N_POINTS - 1].y;
+    } else {
+        for (int i = 0; i < N_POINTS - 1; i += 1) {
+            if (curve[i].x <= hue && hue < curve[i + 1].x) {
+                float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
+                hue_adj = _mix(curve[i].y, curve[i + 1].y, slope);
+                break;
+            }
+        }
+    }
+
+    float res = _powf(saturation, INVERT ? hue_adj : 1.0f / hue_adj);
+
+    return make_float3(p_R, res, p_B);
+}

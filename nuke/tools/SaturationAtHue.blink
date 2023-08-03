@@ -1,5 +1,8 @@
 // https://github.com/hotgluebanjo
-kernel ChromaAtHue : ImageComputationKernel<ePixelWise>
+
+#define N_POINTS 7
+
+kernel SaturationAtHue : ImageComputationKernel<ePixelWise>
 {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
@@ -11,11 +14,10 @@ kernel ChromaAtHue : ImageComputationKernel<ePixelWise>
         float2 cyn;
         float2 blu;
         float2 mag;
-        float range;
         bool invert;
 
     local:
-        float2 curve[6];
+        float2 curve[N_POINTS];
 
     void define() {
         defineParam(red, "Red", float2(0.0f, 1.0f));
@@ -24,7 +26,6 @@ kernel ChromaAtHue : ImageComputationKernel<ePixelWise>
         defineParam(cyn, "Cyan", float2(3.0f / 6.0f, 1.0f));
         defineParam(blu, "Blue", float2(4.0f / 6.0f, 1.0f));
         defineParam(mag, "Magenta", float2(5.0f / 6.0f, 1.0f));
-        defineParam(range, "Range", 1.0f / 6.0f);
         defineParam(invert, "Invert", false);
     }
 
@@ -35,38 +36,41 @@ kernel ChromaAtHue : ImageComputationKernel<ePixelWise>
         curve[3] = cyn;
         curve[4] = blu;
         curve[5] = mag;
+        curve[6] = float2(red.x + 1.0f, red.y);
     }
 
     float lerp(float a, float b, float t) {
         return (1.0f - t) * a + t * b;
     }
 
-    float gauss_basis(float x, float s) {
-        return exp(-pow(x / s, 2.0f));
-    }
-
-    float wrap(float x) {
-        if (x < -0.5f) {
-            return x + 1.0f;
-        } else if (x > 0.5f) {
-            return x - 1.0f;
-        } else {
-            return x;
-        }
-    }
-
     void process() {
         SampleType(src) input = src();
 
         float hue = input.x;
-        float chroma = input.y;
+        float hue_adj = 0.0f;
 
-        for (int i = 0; i < 6; i += 1) {
-            float mask = gauss_basis(wrap(hue - curve[i].x), range);
-            float adj = invert ? curve[i].y : 1.0f / curve[i].y;
-            chroma = lerp(chroma, pow(chroma, adj), mask);
+
+        // This, along with ValueAtHue could be summed gaussians
+        // and still be invertible, since it's not the curve that's
+        // inverted, just the factor.
+        //
+        // Sticking with linear interpolation for consistency.
+        if (hue <= curve[0].x) {
+            hue_adj = curve[0].y;
+        } else if (hue >= curve[N_POINTS - 1].x) {
+            hue_adj = curve[N_POINTS - 1].y;
+        } else {
+            for (int i = 0; i < N_POINTS - 1; i += 1) {
+                if (curve[i].x <= hue && hue < curve[i + 1].x) {
+                    float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
+                    hue_adj = lerp(curve[i].y, curve[i + 1].y, slope);
+                    break;
+                }
+            }
         }
 
-        dst() = float4(input.x, chroma, input.z, input.w);
+        float res = pow(input.y, invert ? hue_adj : 1.0f / hue_adj);
+
+        dst() = float4(input.x, res, input.z, input.w);
     }
 };

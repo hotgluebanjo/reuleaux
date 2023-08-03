@@ -1,0 +1,67 @@
+// https://github.com/hotgluebanjo
+//
+// This is the only multiplicative SaturationAtX adjustment.
+// It's assumed that saturation attenuation is likely global.
+kernel SaturationAtValue : ImageComputationKernel<ePixelWise>
+{
+    Image<eRead, eAccessPoint, eEdgeClamped> src;
+    Image<eWrite> dst;
+
+    param:
+        float2 point_1;
+        float2 point_2;
+        float2 point_3;
+        float2 point_4;
+        float2 point_5;
+        float2 point_6;
+        float range;
+        bool invert;
+
+    local:
+        float2 curve[6];
+
+    void define() {
+        defineParam(point_1, "Point 1", float2(0.0f, 1.0f));
+        defineParam(point_2, "Point 2", float2(0.2f, 1.0f));
+        defineParam(point_3, "Point 3", float2(0.4f, 1.0f));
+        defineParam(point_4, "Point 4", float2(0.6f, 1.0f));
+        defineParam(point_5, "Point 5", float2(0.8f, 1.0f));
+        defineParam(point_6, "Point 6", float2(1.0f, 1.0f));
+        defineParam(range, "Range", 1.0f / 5.0f);
+        defineParam(invert, "Invert", false);
+    }
+
+    void init() {
+        curve[0] = point_1;
+        curve[1] = point_2;
+        curve[2] = point_3;
+        curve[3] = point_4;
+        curve[4] = point_5;
+        curve[5] = point_6;
+    }
+
+    float gauss_basis(float x, float s) {
+        return exp(-pow(x / s, 2.0f));
+    }
+
+    void process() {
+        SampleType(src) input = src();
+
+        float saturation = input.y;
+        float value = input.z;
+
+        float sum = 0.0f;
+        float weight_sum = 0.0f;
+
+        for (int i = 0; i < 6; i += 1) {
+            float weight = gauss_basis(value - curve[i].x, range);
+            sum += weight * curve[i].y;
+            weight_sum += weight;
+        }
+
+        float saturation_curve = max(sum / weight_sum, 1e-6f);
+        float adjusted = invert ? saturation / saturation_curve : saturation * saturation_curve;
+
+        dst() = float4(input.x, adjusted, input.z, input.w);
+    }
+};

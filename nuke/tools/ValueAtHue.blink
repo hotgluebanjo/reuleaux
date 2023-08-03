@@ -1,0 +1,77 @@
+// https://github.com/hotgluebanjo
+
+#define N_POINTS 7
+
+kernel ValueAtHue : ImageComputationKernel<ePixelWise>
+{
+    Image<eRead, eAccessPoint, eEdgeClamped> src;
+    Image<eWrite> dst;
+
+    param:
+        float2 red;
+        float2 yel;
+        float2 grn;
+        float2 cyn;
+        float2 blu;
+        float2 mag;
+        bool invert;
+
+    local:
+        float2 curve[N_POINTS];
+
+    void define() {
+        defineParam(red, "Red", float2(0.0f, 0.0f));
+        defineParam(yel, "Yellow", float2(1.0f / 6.0f, 0.0f));
+        defineParam(grn, "Green", float2(2.0f / 6.0f, 0.0f));
+        defineParam(cyn, "Cyan", float2(3.0f / 6.0f, 0.0f));
+        defineParam(blu, "Blue", float2(4.0f / 6.0f, 0.0f));
+        defineParam(mag, "Magenta", float2(5.0f / 6.0f, 0.0f));
+        defineParam(invert, "Invert", false);
+    }
+
+    void init() {
+        curve[0] = red;
+        curve[1] = yel;
+        curve[2] = grn;
+        curve[3] = cyn;
+        curve[4] = blu;
+        curve[5] = mag;
+        curve[6] = float2(red.x + 1.0f, red.y);
+    }
+
+    float lerp(float a, float b, float t) {
+        return (1.0f - t) * a + t * b;
+    }
+
+    void process() {
+        SampleType(src) input = src();
+
+        float hue = input.x;
+        float hue_adj = 0.0f;
+
+        // Could extrapolate here instead.
+        if (hue <= curve[0].x) {
+            hue_adj = curve[0].y;
+        } else if (hue >= curve[N_POINTS - 1].x) {
+            hue_adj = curve[N_POINTS - 1].y;
+        } else {
+            for (int i = 0; i < N_POINTS - 1; i += 1) {
+                if (curve[i].x <= hue && hue < curve[i + 1].x) {
+                    float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
+                    hue_adj = lerp(curve[i].y, curve[i + 1].y, slope);
+                    break;
+                }
+            }
+        }
+
+        float factor = max(1.0f - input.y * hue_adj, 1e-6f);
+        float res;
+
+        if (invert)
+            res = input.z * factor;
+        else
+            res = input.z / factor;
+
+        dst() = float4(input.x, input.y, res, input.w);
+    }
+};
