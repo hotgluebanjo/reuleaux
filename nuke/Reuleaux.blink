@@ -101,23 +101,11 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
             reuleaux.z
         );
 
-        float3 rgb;
-        bool case_1 = ocs.x <= -ocs.y/sqrt(3.0f) && ocs.y <= 0.0f;
-        bool case_2 = ocs.x < ocs.y/sqrt(3.0f);
-
-        if (case_1) {
-            rgb.x = 3.0f/sqrt(2.0f)*ocs.x + sqrt(3.0f/2.0f)*ocs.y + ocs.z;
-            rgb.y = sqrt(6.0f)*ocs.y + ocs.z;
-            rgb.z = ocs.z;
-        } else if (case_2) {
-            rgb.x = 3.0f/sqrt(2.0f)*ocs.x - sqrt(3.0f/2.0f)*ocs.y + ocs.z;
-            rgb.y = ocs.z;
-            rgb.z = -sqrt(6.0f)*ocs.y + ocs.z;
-        } else {
-            rgb.x = ocs.z;
-            rgb.y = -3.0f/sqrt(2.0f)*ocs.x + sqrt(3.0f/2.0f)*ocs.y + ocs.z;
-            rgb.z = -3.0f/sqrt(2.0f)*ocs.x - sqrt(3.0f/2.0f)*ocs.y + ocs.z;
-        }
+        float3 rgb = float3(
+            ocs.z - sqrt(3.0f/2.0f)*max(fabs(ocs.y) - sqrt(3.0f)*ocs.x, 0.0f),
+            ocs.z - sqrt(3.0f/2.0f)*(max(fabs(ocs.y), sqrt(3.0f)*ocs.x) - ocs.y),
+            ocs.z - sqrt(3.0f/2.0f)*(max(fabs(ocs.y), sqrt(3.0f)*ocs.x) + ocs.y)
+        );
 
         return rgb;
     }

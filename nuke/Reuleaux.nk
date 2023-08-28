@@ -34,13 +34,9 @@ set N5f7d400 [stack 0]
   ypos 111
  }
  Expression {
-  temp_name0 if
-  temp_expr0 "r <= -g/sqrt(3) && g <= 0"
-  temp_name1 if_
-  temp_expr1 "r < g/sqrt(3)"
-  expr0 "if ? 3*r/sqrt(2) + sqrt(3/2)*g + b : (if_ ? 3*r/sqrt(2) - sqrt(3/2)*g + b : b)"
-  expr1 "if ? sqrt(6)*g + b : (if_ ? b : -3*r/sqrt(2) + sqrt(3/2)*g + b)"
-  expr2 "if ? b : (if_ ? -sqrt(6)*g + b : -3*r/sqrt(2) - sqrt(3/2)*g + b)"
+  expr0 "b - sqrt(3/2)*max(abs(g) - sqrt(3)*r, 0)"
+  expr1 "b - sqrt(3/2)*(max(abs(g), sqrt(3)*r) - g)"
+  expr2 "b - sqrt(3/2)*(max(abs(g), sqrt(3)*r) + g)"
   name OCS_to_RGB
   xpos 70
   ypos 159

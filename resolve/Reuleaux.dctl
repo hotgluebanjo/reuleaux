@@ -44,23 +44,11 @@ __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
         reuleaux.z
     };
 
-    float3 rgb;
-    bool case_1 = ocs.x <= -ocs.y/_sqrtf(3.0f) && ocs.y <= 0.0f;
-    bool case_2 = ocs.x < ocs.y/_sqrtf(3.0f);
-
-    if (case_1) {
-        rgb.x = 3.0f/_sqrtf(2.0f)*ocs.x + _sqrtf(3.0f/2.0f)*ocs.y + ocs.z;
-        rgb.y = _sqrtf(6.0f)*ocs.y + ocs.z;
-        rgb.z = ocs.z;
-    } else if (case_2) {
-        rgb.x = 3.0f/_sqrtf(2.0f)*ocs.x - _sqrtf(3.0f/2.0f)*ocs.y + ocs.z;
-        rgb.y = ocs.z;
-        rgb.z = -_sqrtf(6.0f)*ocs.y + ocs.z;
-    } else {
-        rgb.x = ocs.z;
-        rgb.y = -3.0f/_sqrtf(2.0f)*ocs.x + _sqrtf(3.0f/2.0f)*ocs.y + ocs.z;
-        rgb.z = -3.0f/_sqrtf(2.0f)*ocs.x - _sqrtf(3.0f/2.0f)*ocs.y + ocs.z;
-    }
+    float3 rgb = {
+        ocs.z - _sqrtf(3.0f/2.0f)*_fmaxf(_fabs(ocs.y) - _sqrtf(3.0f)*ocs.x, 0.0f),
+        ocs.z - _sqrtf(3.0f/2.0f)*(_fmaxf(_fabs(ocs.y), _sqrtf(3.0f)*ocs.x) - ocs.y),
+        ocs.z - _sqrtf(3.0f/2.0f)*(_fmaxf(_fabs(ocs.y), _sqrtf(3.0f)*ocs.x) + ocs.y)
+    };
 
     return rgb;
 }
