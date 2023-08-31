@@ -5,8 +5,8 @@ Group {
  name Reuleaux
  label "\[value direction]"
  selected true
- xpos 20
- ypos -281
+ xpos 257
+ ypos 58
  addUserKnob {20 User}
  addUserKnob {4 direction M {forward inverse}}
 }
@@ -16,32 +16,30 @@ Group {
   xpos -40
   ypos -9
  }
-set N5f7d400 [stack 0]
+set N57a07400 [stack 0]
  Multiply {
   value {{2*pi} {sqrt(2)} 1 1}
   name Denormalize
   xpos 70
-  ypos 57
+  ypos 81
  }
  Expression {
   temp_name0 M
   temp_expr0 "sqrt(2)*max(cos(r), cos(r + 2*pi/3), cos(r - 2*pi/3)) + 1/g"
-  expr0 b*cos(r)/M
-  expr1 b*sin(r)/M
-  expr2 b
-  name Reuleaux_to_OCS
+  temp_name1 u
+  temp_expr1 b*cos(r)/M
+  temp_name2 v
+  temp_expr2 b*sin(r)/M
+  temp_name3 w_t
+  temp_expr3 b
+  expr0 "w_t - sqrt(3/2)*max(abs(v) - sqrt(3)*u, 0)"
+  expr1 "w_t - sqrt(3/2)*(max(abs(v), sqrt(3)*u) - v)"
+  expr2 "w_t - sqrt(3/2)*(max(abs(v), sqrt(3)*u) + v)"
+  name Reuleaux_to_RGB
   xpos 70
-  ypos 111
+  ypos 135
  }
- Expression {
-  expr0 "b - sqrt(3/2)*max(abs(g) - sqrt(3)*r, 0)"
-  expr1 "b - sqrt(3/2)*(max(abs(g), sqrt(3)*r) - g)"
-  expr2 "b - sqrt(3/2)*(max(abs(g), sqrt(3)*r) + g)"
-  name OCS_to_RGB
-  xpos 70
-  ypos 159
- }
-push $N5f7d400
+push $N57a07400
  Expression {
   temp_name0 u
   temp_expr0 sqrt(2)/6*(2*r-g-b)
@@ -49,36 +47,36 @@ push $N5f7d400
   temp_expr1 (g-b)/sqrt(6)
   temp_name2 w
   temp_expr2 (r+g+b)/3
-  expr0 "pi-atan2(v,-u)"
+  expr0 pi-atan2(v,-u)
   expr1 "w == 0 ? 0 : hypot(u,v)/w"
   expr2 max(r,g,b)
   name RGB_to_Reuleaux
   xpos -150
-  ypos 63
+  ypos 87
  }
  Multiply {
   value {{1/(2*pi)} {1/sqrt(2)} 1 1}
   name Normalize
   xpos -150
-  ypos 105
+  ypos 129
  }
  Switch {
   inputs 2
   which {{parent.direction}}
   name Inverse
   xpos -40
-  ypos 231
+  ypos 255
  }
  Output {
   name Output1
   xpos -40
-  ypos 279
+  ypos 303
  }
  StickyNote {
   inputs 0
   name StickyNote1
-  label "Created by:\nhttps://github.com/hotgluebanjo\nhttps://github.com/calvinsilly"
+  label "https://github.com/hotgluebanjo\nhttps://github.com/calvinsilly"
   xpos 126
-  ypos -21
+  ypos -15
  }
 end_group

@@ -164,8 +164,9 @@ kernel ReuleauxUser : ImageComputationKernel<ePixelWise>
 
         saturation_hue_factor *= overall_saturation;
 
-        if (!invert)
+        if (!invert) {
             saturation_hue_factor = 1.0f / saturation_hue_factor;
+        }
 
         float saturation_result = pow(saturation, saturation_hue_factor);
 
@@ -173,10 +174,11 @@ kernel ReuleauxUser : ImageComputationKernel<ePixelWise>
         float value_factor = max(1.0f - saturation_s * (value_hue_factor + overall_value), 1e-6f);
         float value_result;
 
-        if (invert)
+        if (invert) {
             value_result = value * value_factor;
-        else
+        } else {
             value_result = value / value_factor;
+        }
 
         dst() = float4(hue_result, saturation_result, value_result, input.w);
     }

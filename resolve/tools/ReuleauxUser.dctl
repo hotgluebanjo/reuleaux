@@ -124,8 +124,9 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
 
     saturation_hue_factor *= OVERALL_SATURATION;
 
-    if (!INVERT)
+    if (!INVERT) {
         saturation_hue_factor = 1.0f / saturation_hue_factor;
+    }
 
     float saturation_result = _powf(saturation, saturation_hue_factor);
 
@@ -133,10 +134,11 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
     float value_factor = _fmaxf(1.0f - saturation_s * (value_hue_factor + OVERALL_VALUE), 1e-6f);
     float value_result;
 
-    if (INVERT)
+    if (INVERT) {
         value_result = value * value_factor;
-    else
+    } else {
         value_result = value / value_factor;
+    }
 
     return make_float3(hue_result, saturation_result, value_result);
 }

@@ -1,4 +1,7 @@
 // https://github.com/hotgluebanjo
+//
+// Matches saturation `x` to `y` at provided hue center.
+// `x` and `y` values must be in domain 0-1.
 
 DEFINE_UI_PARAMS(RED_HUE, Red Hue Center, DCTLUI_VALUE_BOX, 0.0)
 DEFINE_UI_PARAMS(RED_X, Red Saturation x, DCTLUI_VALUE_BOX, 0.5)

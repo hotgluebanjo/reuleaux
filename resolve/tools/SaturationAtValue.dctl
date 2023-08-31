@@ -35,8 +35,7 @@ __DEVICE__ float gauss_basis(float x, float s) {
 }
 
 __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
-    if (RANGE < 1e-6f)
-        return make_float3(p_R, p_G, p_B);
+    if (RANGE < 1e-6f) return make_float3(p_R, p_G, p_B);
 
     float2 curve[6] = {
         {POINT_1_X, POINT_1_Y},

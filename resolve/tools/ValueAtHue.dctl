@@ -60,10 +60,11 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
     float factor = _fmaxf(1.0f - saturation * hue_adj, 1e-6f);
     float res;
 
-    if (INVERT)
+    if (INVERT) {
         res = value * factor;
-    else
+    } else {
         res = value / factor;
+    }
 
     return make_float3(p_R, p_G, res);
 }

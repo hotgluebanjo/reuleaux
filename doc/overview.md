@@ -8,13 +8,13 @@ For the math and detailed implementation information, check out the [derivation]
 
 An interpretation of Yedlin's approach to image formation is:
 
-- [Start from interpolated catches, i.e., no colorimetric fit matrix](https://twitter.com/steveyedlin/status/865790998739206144)
-- Apply manufacturer log transfer function or shaper
-- [Form chromaticity with nonlinear but broad fittings of film data](https://twitter.com/steveyedlin/status/1130261214674673664) in a cylindrical/spherical model to offload complexity, allowing full invertibility to be possible or simpler
-- Attenuate
-- Apply per-channel lookup, where each channel is a unique interpolation of film data
+- [Start from interpolated catches, i.e., no colorimetric fit matrix](https://twitter.com/steveyedlin/status/865790998739206144).
+- Apply manufacturer log transfer function or shaper.
+- [Form chromaticity with nonlinear but broad fittings of film data](https://twitter.com/steveyedlin/status/1130261214674673664) in a cylindrical/spherical model to offload complexity, allowing full invertibility to be possible or simpler.
+- Attenuate.
+- Apply per-channel lookup, where each channel is a unique interpolation of film data.
 
-In trying to imitate this process, a major unknown is the model itself. Comparing Cone Coordinates with similar models, it was clear that it isn't "perceptually uniform" and that it best resembles HSV. Along came the rediscovery of...
+The major unknown in imitating this process is the model itself. That Cone Coordinates is not "perceptually uniform" and best resembles HSV quickly became clear, but its workings remained a mystery. Along came the rediscovery of...
 
 ## Spherical Coordinates
 
