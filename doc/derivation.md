@@ -101,7 +101,8 @@ An alternative method of swapping norms can be done with an additional color mod
 
 Pictorially, we can communicate the above with some notion of a commutative diagram, which shows the maps (morphisms) as arrows.
 
-<p align="center">
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/63132541/265260265-df17bf17-4e3a-466f-9ef2-d2e3ddcb48a5.svg">
 <img alt="
 \begin{tikzcd}
 	RGB & {R'G'B'} \\
@@ -114,14 +115,15 @@ Pictorially, we can communicate the above with some notion of a commutative diag
 	\arrow["f"', from=1-1, to=2-1]
 	\arrow[bend right=11, shorten &gt;=7pt, dashed, from=2-1, to=0]
 \end{tikzcd}"
-width="300" src="https://user-images.githubusercontent.com/66244111/261149902-5ab457c8-c116-4548-be17-e66bbdb64c58.svg">
-</p>
+width="300" src="https://user-images.githubusercontent.com/63132541/265260273-0caaca27-d27d-4403-ae6c-03c243c81fa9.svg">
+</picture></p>
 
 Where $f$ denotes "map to model" and $M'_c$ is a partially preserved model.
 
 Applying the above, we want $M$ to behave like the HSV color model, defined as $\mathcal{H}\colon RGB \mapsto HSV$; while $R'G'B'$ to be some operation within $\mathcal{C}$.
 
-<p align="center">
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/63132541/265260267-46fca895-ef3f-45af-8608-dc7c22b9e6f1.svg">
 <img alt="
 \begin{tikzcd}
 	RGB & {(\varphi, \rho, z)} \\
@@ -138,28 +140,31 @@ Applying the above, we want $M$ to behave like the HSV color model, defined as $
 	\arrow["{\mathcal{C}^{-1}}", from=1-2, to=2-2]
 	\arrow["{\mathcal{H}}", from=2-2, to=4-2]
 	\arrow[bend right=11, shorten &gt;=7pt, dashed, from=4-1, to=0]
-\end{tikzcd}" width="300" src="https://user-images.githubusercontent.com/66244111/261149905-b2c9b7e3-ac4c-445b-be18-7fd65ef03c14.svg">
-</p>
+\end{tikzcd}"
+width="300" src="https://user-images.githubusercontent.com/63132541/265260274-519a85ae-1ceb-432c-9f21-b5f80e27dfd3.svg">
+</picture></p>
 
 For reasons that will be clear in a moment, let's draw the process of arriving at $(1)$, that is
 
-<p align="center">
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/63132541/265260268-bf4449ae-db68-4be4-8bad-3cc054559f98.svg">
 <img alt="
-\[\begin{tikzcd}
+\begin{tikzcd}
 	RGB & {(\varphi, \rho, z)} \\
 	& {(\varphi, \rho, V)}
 	\arrow["{\mathcal{C}}", from=1-1, to=1-2]
 	\arrow["{z\mapsto\max(R,G,B)=V}", from=1-2, to=2-2]
 	\arrow["{(1)}"', from=1-1, to=2-2]
-\end{tikzcd}\]"
-width="450" src="https://user-images.githubusercontent.com/66244111/261149909-eed6901d-c824-49ba-ac40-fb179edb536c.svg">
-</p>
+\end{tikzcd}"
+width="450" src="https://user-images.githubusercontent.com/63132541/265260275-e1c0f1ce-7d88-4ed0-94ae-3529e62db454.svg">
+</picture></p>
 
 and make the crucial observation that this is in fact the same category as the one before—if we remove a collection of morphisms. More importantly, the collection we have to remove precisely represents the inverse map $(2)$; which is what we wanted to find.
 
 By constructing a diagram from the observation we made above, and making sense of any ambiguity—such as labeling objects appropriately; we get
 
-<p align="center">
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/63132541/265260269-b87108e2-912e-47b4-a1fe-998fdbfa87f2.svg">
 <img alt="
 \begin{tikzcd}
 	{(\varphi, \rho, V)} & {(R',G',B')} & {HSV'} \\
@@ -171,8 +176,8 @@ By constructing a diagram from the observation we made above, and making sense o
 	\arrow["{\mathcal{H}}", from=1-2, to=1-3]
 	\arrow["{(2)}"', from=1-1, to=3-3]
 \end{tikzcd}"
-width="512" src="https://user-images.githubusercontent.com/66244111/261149912-f9786f26-ff96-4876-bbb0-457087df5ad5.svg">
-</p>
+width="512" src="https://user-images.githubusercontent.com/63132541/265260276-ca39731f-f89a-4cb7-b36a-0385beed3734.svg">
+</picture></p>
 
 Because the diagram commutes, we have that $(2)$ is instead reduced to a mere composition exercise.
 
@@ -226,7 +231,8 @@ This lets us replace any instances of $\mathcal{H}$ with $\bar{\mathcal{H}}$, ma
 ### Reduction
 We start by composing $\bar{\mathcal{H}}$ with $\mathcal{C}^{-1}$
 
-<p align="center">
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/63132541/265260270-60aee5a8-d5e5-42a6-bd4f-cca520369478.svg">
 <img alt="
 \begin{tikzcd}
 	{(\varphi, \rho, V)} & {R'G'B'} & {(\varphi,S_c,V')}
@@ -234,8 +240,8 @@ We start by composing $\bar{\mathcal{H}}$ with $\mathcal{C}^{-1}$
 	\arrow["{\bar{\mathcal{H}}}", from=1-2, to=1-3]
 	\arrow["{\bar{\mathcal{H}}\circ \mathcal{C}^{-1}}"', bend right=20, from=1-1, to=1-3]
 \end{tikzcd}"
-width="450" src="https://user-images.githubusercontent.com/66244111/261149915-962f7d95-366a-4cfd-a438-55397d065b56.svg">
-</p>
+width="450" src="https://user-images.githubusercontent.com/63132541/265260277-19a96960-b6fc-4d9d-b96a-2597f84d1e75.svg">
+</picture></p>
 
 so that we get
 
@@ -273,7 +279,8 @@ acting as the composition $\mathcal{F}=\big(V'\mapsto V\big) \circ \big(\bar{\ma
 
 Finally composing $\bar{\mathcal{H}}^{-1}$ with $\mathcal{F}$
 
-<p align="center">
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/63132541/265260272-085a05ed-8e19-41cf-b553-2730ebfe7a94.svg">
 <img alt="
 \begin{tikzcd}
 	{(\varphi, \rho, V)} & {R'G'B'} & {(\varphi,S_c,V')} \\
@@ -285,8 +292,8 @@ Finally composing $\bar{\mathcal{H}}^{-1}$ with $\mathcal{F}$
 	\arrow["{\mathcal{C}^{-1}}", from=1-1, to=1-2]
 	\arrow["{\bar{\mathcal{H}}}", from=1-2, to=1-3]
 \end{tikzcd}"
-width="512" src="https://user-images.githubusercontent.com/66244111/261149918-f4b4e33c-3c03-43cc-a9ff-01f8b43f2346.svg">
-</p>
+width="512" src="https://user-images.githubusercontent.com/63132541/265260278-648db345-598e-41f4-aa06-3552025ea96d.svg">
+</picture></p>
 
 such that
 
@@ -426,7 +433,8 @@ $$
 (x,y)=\frac{V\rho}{m}\left(\cos \varphi,\sin \varphi\right)
 $$
 
-<p align="center">
+<p align="center"><picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/63132541/265260544-af72ef02-799a-4f2b-979f-897a97e2a34f.svg">
 <img alt="
 \begin{tikzpicture}
 \begin{axis}[
@@ -442,8 +450,8 @@ $$
 \addplot[domain=0:2*pi, samples=300, black, thick] ({0.87/(sqrt(2)*0.87*max(cos(x),cos(x-2*pi/3),cos(x+2*pi/3)) + 1)*cos(x)}, {0.87/(sqrt(2)*0.87*max(cos(x),cos(x-2*pi/3),cos(x+2*pi/3)) + 1)*sin(x)});
 \end{axis}
 \end{tikzpicture}"
-width="512" src="https://user-images.githubusercontent.com/66244111/261149975-f6089bc0-5827-4057-9647-71ac20f0f311.svg">
-</p>
+width="512" src="https://user-images.githubusercontent.com/63132541/265260546-54ac7455-d3c3-42e0-b89a-3b40efe8e208.svg">
+</picture></p>
 
 The curve of which resembles a Reuleaux triangle. Hence the name Reuleaux.
 One possible way of quantifying this resemblance is by comparing the properties of one (e.g. constant width).
