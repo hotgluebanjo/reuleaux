@@ -58,8 +58,19 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         weight_sum += weight;
     }
 
-    float value_curve = _fmaxf(sum / weight_sum, 1e-6f);
-    float adjusted = INVERT ? saturation / value_curve : saturation * value_curve;
+    float value_curve;
+    if (weight_sum == 0.0f) {
+        value_curve = 1.0f;
+    } else {
+        value_curve = max(sum / weight_sum, 1e-6f);
+    }
 
-    return make_float3(p_R, adjusted, p_B);
+    float res; 
+    if (INVERT) {
+        res = saturation / value_curve;
+    } else {
+        res = saturation * value_curve;
+    }
+
+    return make_float3(p_R, res, p_B);
 }

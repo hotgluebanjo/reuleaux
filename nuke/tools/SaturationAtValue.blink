@@ -59,9 +59,20 @@ kernel SaturationAtValue : ImageComputationKernel<ePixelWise>
             weight_sum += weight;
         }
 
-        float saturation_curve = max(sum / weight_sum, 1e-6f);
-        float adjusted = invert ? saturation / saturation_curve : saturation * saturation_curve;
+        float value_curve;
+        if (weight_sum == 0.0f) {
+            value_curve = 1.0f;
+        } else {
+            value_curve = max(sum / weight_sum, 1e-6f);
+        }
 
-        dst() = float4(input.x, adjusted, input.z, input.w);
+        float res; 
+        if (invert) {
+            res = saturation / value_curve;
+        } else {
+            res = saturation * value_curve;
+        }
+
+        dst() = float4(input.x, res, input.z, input.w);
     }
 };

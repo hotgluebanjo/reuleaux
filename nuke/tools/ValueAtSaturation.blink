@@ -57,9 +57,20 @@ kernel ValueAtSaturation : ImageComputationKernel<ePixelWise>
         }
 
         // Clip prevents negatives and eps preserves invertibility.
-        float saturation_curve = max(sum / weight_sum, 1e-6f);
-        float adjusted = invert ? value / saturation_curve : value * saturation_curve;
+        float saturation_curve;
+        if (weight_sum == 0.0f) {
+            saturation_curve = 1.0f;
+        } else {
+            saturation_curve = max(sum / weight_sum, 1e-6f);
+        }
 
-        dst() = float4(input.x, input.y, adjusted, input.w);
+        float res; 
+        if (invert) {
+            res = value / saturation_curve;
+        } else {
+            res = value * saturation_curve;
+        }
+
+        dst() = float4(input.x, input.y, res, input.w);
     }
 };
