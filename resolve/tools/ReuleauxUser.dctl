@@ -1,11 +1,11 @@
 // https://github.com/hotgluebanjo
 // https://github.com/calvinsilly
 
-// 6 hue + 3 anchor.
+// 6 hue, 1 wrap, 2 anchor.
 #define N_HUE_POINTS 9
 
-// One per wrapped hue.
-#define N_CORNER_POINTS 6
+// 6 hue, 1 wrap.
+#define N_CORNER_POINTS 7
 
 #define EPS 1e-6f
 
@@ -72,10 +72,10 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
     float2 hue_curve[N_HUE_POINTS];
 
     // Start and end anchors.
-    hue_curve[0] = make_float2(5.0f / 6.0f - 1.0f, MAG_HUE + 5.0f / 6.0f - 1.0f);
-    hue_curve[8] = make_float2(1.0f / 6.0f + 1.0f, YEL_HUE + 1.0f / 6.0f + 1.0f);
+    hue_curve[0] = make_float2(5.0f / 6.0f, MAG_HUE + 5.0f / 6.0f) - 1.0f;
+    hue_curve[8] = make_float2(1.0f / 6.0f, YEL_HUE + 1.0f / 6.0f) + 1.0f;
 
-    // Wrapped around origin.
+    // Wrapping anchor.
     hue_curve[1] = make_float2(0.0f, RED_HUE);
     hue_curve[7] = make_float2(1.0f, RED_HUE + 1.0f);
 
@@ -97,7 +97,8 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         {2.0f / 6.0f, GRN_SAT},
         {3.0f / 6.0f, CYN_SAT},
         {4.0f / 6.0f, BLU_SAT},
-        {5.0f / 6.0f, MAG_SAT}
+        {5.0f / 6.0f, MAG_SAT},
+        {1.0f,        RED_SAT}
     };
 
     float2 val_curve[N_CORNER_POINTS] = {
@@ -106,7 +107,8 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         {2.0f / 6.0f, GRN_VAL},
         {3.0f / 6.0f, CYN_VAL},
         {4.0f / 6.0f, BLU_VAL},
-        {5.0f / 6.0f, MAG_VAL}
+        {5.0f / 6.0f, MAG_VAL},
+        {1.0f,        RED_VAL}
     };
 
     float hue_res = interp_linear(hue_curve, N_HUE_POINTS, hue);

@@ -2,6 +2,8 @@
 
 // TODO: Wrapping of red hue < 0 > 0.5.
 
+#define N_POINTS 7
+
 DEFINE_UI_PARAMS(RED_HUE, Red Hue, DCTLUI_SLIDER_FLOAT, 0.0, 0.0, 1.0, 0.001)
 DEFINE_UI_PARAMS(RED_SATURATION, Red Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 
@@ -21,8 +23,6 @@ DEFINE_UI_PARAMS(MAG_HUE, Magenta Hue, DCTLUI_SLIDER_FLOAT, 0.833, 0.666, 1.0, 0
 DEFINE_UI_PARAMS(MAG_SATURATION, Magenta Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 
 DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
-
-#define N_POINTS 7
 
 __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
     float2 curve[N_POINTS] = {
