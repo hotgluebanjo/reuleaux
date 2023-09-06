@@ -4,10 +4,17 @@
 // TODO: Less bad (names).
 
 // 6 hue + 1 anchor.
-#define N_HUE_POINTS 7
+#define N_HUE_POINTS 9
 
 // One per wrapped hue.
 #define N_CORNER_POINTS 6
+
+float spow(float x, float p) {
+    if (x > 0.0f) {
+        return pow(x, p);
+    }
+    return x;
+}
 
 kernel ReuleauxUser : ImageComputationKernel<ePixelWise>
 {
@@ -78,13 +85,17 @@ kernel ReuleauxUser : ImageComputationKernel<ePixelWise>
     }
 
     void init() {
-        hue_curve[0] = float2(0.0f, red_hue);
-        hue_curve[1] = float2(1.0f / 6.0f, yel_hue + 1.0f / 6.0f);
-        hue_curve[2] = float2(2.0f / 6.0f, grn_hue + 2.0f / 6.0f);
-        hue_curve[3] = float2(3.0f / 6.0f, cyn_hue + 3.0f / 6.0f);
-        hue_curve[4] = float2(4.0f / 6.0f, blu_hue + 4.0f / 6.0f);
-        hue_curve[5] = float2(5.0f / 6.0f, mag_hue + 5.0f / 6.0f);
-        hue_curve[6] = float2(1.0f, red_hue + 1.0f);
+        // Start and end anchors.
+        hue_curve[0] = float2(5.0f / 6.0f, mag_hue + 5.0f / 6.0f) - 1.0f;
+        hue_curve[8] = float2(1.0f / 6.0f, yel_hue + 1.0f / 6.0f) + 1.0f;
+
+        hue_curve[1] = float2(0.0f, red_hue);
+        hue_curve[2] = float2(1.0f / 6.0f, yel_hue + 1.0f / 6.0f);
+        hue_curve[3] = float2(2.0f / 6.0f, grn_hue + 2.0f / 6.0f);
+        hue_curve[4] = float2(3.0f / 6.0f, cyn_hue + 3.0f / 6.0f);
+        hue_curve[5] = float2(4.0f / 6.0f, blu_hue + 4.0f / 6.0f);
+        hue_curve[6] = float2(5.0f / 6.0f, mag_hue + 5.0f / 6.0f);
+        hue_curve[7] = float2(1.0f, red_hue + 1.0f);
 
         if (invert) {
             for (int i = 0; i < N_HUE_POINTS; i += 1) {
@@ -168,7 +179,7 @@ kernel ReuleauxUser : ImageComputationKernel<ePixelWise>
             saturation_hue_factor = 1.0f / saturation_hue_factor;
         }
 
-        float saturation_result = pow(saturation, saturation_hue_factor);
+        float saturation_result = spow(saturation, saturation_hue_factor);
 
         float saturation_s = invert ? saturation : saturation_result;
         float value_factor = max(1.0f - saturation_s * (value_hue_factor + overall_value), 1e-6f);

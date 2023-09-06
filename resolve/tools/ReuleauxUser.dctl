@@ -4,7 +4,7 @@
 // TODO: Less bad (names).
 
 // 6 hue + 1 anchor.
-#define N_HUE_POINTS 7
+#define N_HUE_POINTS 9
 
 // One per wrapped hue.
 #define N_CORNER_POINTS 6
@@ -38,7 +38,7 @@ DEFINE_UI_PARAMS(MAG_VALUE, Magenta Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 
 
 DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
 
-__DEVICE__ float tent_basis(float x, float s) {
+__DEVICE__ inline float tent_basis(float x, float s) {
     return _fmaxf(1.0f - _fabs(x / s), 0.0f);
 }
 
@@ -52,8 +52,16 @@ __DEVICE__ float wrap(float x) {
     }
 }
 
+__DEVICE__ float spow(float x, float p) {
+    if (x > 0.0f) {
+        return _powf(x, p);
+    }
+    return x;
+}
+
 __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
     float2 hue_curve[N_HUE_POINTS] = {
+        {5.0f / 6.0f - 1.0f, MAG_HUE + 5.0f / 6.0f - 1.0f},
         {0.0f, RED_HUE},
         {1.0f / 6.0f, YEL_HUE + 1.0f / 6.0f},
         {2.0f / 6.0f, GRN_HUE + 2.0f / 6.0f},
@@ -61,6 +69,7 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         {4.0f / 6.0f, BLU_HUE + 4.0f / 6.0f},
         {5.0f / 6.0f, MAG_HUE + 5.0f / 6.0f},
         {1.0f, RED_HUE + 1.0f},
+        {1.0f / 6.0f + 1.0f, YEL_HUE + 1.0f / 6.0f + 1.0f},
     };
 
     if (INVERT) {
@@ -128,7 +137,7 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         saturation_hue_factor = 1.0f / saturation_hue_factor;
     }
 
-    float saturation_result = _powf(saturation, saturation_hue_factor);
+    float saturation_result = spow(saturation, saturation_hue_factor);
 
     float saturation_s = INVERT ? saturation : saturation_result;
     float value_factor = _fmaxf(1.0f - saturation_s * (value_hue_factor + OVERALL_VALUE), 1e-6f);
