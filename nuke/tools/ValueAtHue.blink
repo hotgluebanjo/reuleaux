@@ -2,8 +2,9 @@
 
 #define N_POINTS 7
 
-kernel ValueAtHue : ImageComputationKernel<ePixelWise>
-{
+#define EPS 1e-6f
+
+kernel ValueAtHue : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
 
@@ -64,15 +65,15 @@ kernel ValueAtHue : ImageComputationKernel<ePixelWise>
             }
         }
 
-        float factor = max(1.0f - input.y * hue_adj, 1e-6f);
-        float res;
+        float factor = max(1.0f - input.y * hue_adj, EPS);
+        float result;
 
         if (invert) {
-            res = input.z * factor;
+            result = input.z * factor;
         } else {
-            res = input.z / factor;
+            result = input.z / factor;
         }
 
-        dst() = float4(input.x, input.y, res, input.w);
+        dst() = float4(input.x, input.y, result, input.w);
     }
 };

@@ -36,6 +36,13 @@ typedef struct {
     float2 point;
 } AutoPoint;
 
+__DEVICE__ inline float spow(float x, float p) {
+    if (x > 0.0f) {
+        return _powf(x, p);
+    }
+    return x;
+}
+
 __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
     AutoPoint params_list[6] = {
         {RED_HUE, {RED_X, RED_Y}},
@@ -81,7 +88,7 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         }
     }
 
-    float res = _powf(saturation, INVERT ? hue_adj : 1.0f / hue_adj);
+    float result = spow(saturation, INVERT ? hue_adj : 1.0f / hue_adj);
 
-    return make_float3(p_R, res, p_B);
+    return make_float3(p_R, result, p_B);
 }

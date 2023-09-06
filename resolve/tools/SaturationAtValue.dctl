@@ -26,6 +26,7 @@ DEFINE_UI_PARAMS(RANGE, Range, DCTLUI_SLIDER_FLOAT, 0.2, 0.0, 1.0, 0.001)
 
 DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
 
+// _powf is not trustworthy.
 __DEVICE__ inline float _sqrf(float x) {
     return x * x;
 }
@@ -65,12 +66,12 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         value_curve = max(sum / weight_sum, 1e-6f);
     }
 
-    float res; 
+    float result; 
     if (INVERT) {
-        res = saturation / value_curve;
+        result = saturation / value_curve;
     } else {
-        res = saturation * value_curve;
+        result = saturation * value_curve;
     }
 
-    return make_float3(p_R, res, p_B);
+    return make_float3(p_R, result, p_B);
 }

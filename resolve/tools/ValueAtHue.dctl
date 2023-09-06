@@ -3,9 +3,9 @@
 //
 // This simultaneously attenuates.
 
-#define N_POINTS 7
-
 // TODO: Wrapping of red hue < 0 > 0.5.
+
+#define N_POINTS 7
 
 DEFINE_UI_PARAMS(RED_HUE, Red Hue, DCTLUI_SLIDER_FLOAT, 0.0, 0.0, 1.0, 0.001)
 DEFINE_UI_PARAMS(RED_VALUE, Red Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
@@ -58,13 +58,13 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
     }
 
     float factor = _fmaxf(1.0f - saturation * hue_adj, 1e-6f);
-    float res;
+    float result;
 
     if (INVERT) {
-        res = value * factor;
+        result = value * factor;
     } else {
-        res = value / factor;
+        result = value / factor;
     }
 
-    return make_float3(p_R, p_G, res);
+    return make_float3(p_R, p_G, result);
 }

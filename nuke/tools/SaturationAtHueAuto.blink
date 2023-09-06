@@ -7,11 +7,18 @@
 // Custom types won't work here. Check the DCTL for a better
 // implementation.
 
-// 6 hue + 1 anchor. Wrapping so far hasn't been necessary.
+// 6 hue, 1 wrap. Anchors so far haven't been necessary.
+
 #define N_POINTS 7
 
-kernel SaturationAtHueAuto : ImageComputationKernel<ePixelWise>
-{
+inline float spow(float x, float p) {
+    if (x > 0.0f) {
+        return pow(x, p);
+    }
+    return x;
+}
+
+kernel SaturationAtHueAuto : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
 
@@ -86,8 +93,8 @@ kernel SaturationAtHueAuto : ImageComputationKernel<ePixelWise>
             }
         }
 
-        float res = pow(input.y, invert ? hue_adj : 1.0f / hue_adj);
+        float result = spow(input.y, invert ? hue_adj : 1.0f / hue_adj);
 
-        dst() = float4(input.x, res, input.z, input.w);
+        dst() = float4(input.x, result, input.z, input.w);
     }
 };

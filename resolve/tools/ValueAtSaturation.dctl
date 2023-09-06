@@ -63,12 +63,12 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         saturation_curve = max(sum / weight_sum, 1e-6f);
     }
 
-    float res; 
+    float result;
     if (INVERT) {
-        res = value / saturation_curve;
+        result = value / saturation_curve;
     } else {
-        res = value * saturation_curve;
+        result = value * saturation_curve;
     }
 
-    return make_float3(p_R, p_G, res);
+    return make_float3(p_R, p_G, result);
 }

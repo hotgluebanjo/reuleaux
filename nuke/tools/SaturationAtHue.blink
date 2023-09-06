@@ -2,8 +2,14 @@
 
 #define N_POINTS 7
 
-kernel SaturationAtHue : ImageComputationKernel<ePixelWise>
-{
+inline float spow(float x, float p) {
+    if (x > 0.0f) {
+        return pow(x, p);
+    }
+    return x;
+}
+
+kernel SaturationAtHue : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
 
@@ -52,7 +58,7 @@ kernel SaturationAtHue : ImageComputationKernel<ePixelWise>
 
         // This, along with ValueAtHue could be summed gaussians
         // and still be invertible, since it's not the curve that's
-        // inverted, just the factor.
+        // inverted, just the factor scaling.
         //
         // Sticking with linear interpolation for consistency.
         if (hue <= curve[0].x) {
@@ -69,8 +75,8 @@ kernel SaturationAtHue : ImageComputationKernel<ePixelWise>
             }
         }
 
-        float res = pow(input.y, invert ? hue_adj : 1.0f / hue_adj);
+        float result = spow(input.y, invert ? hue_adj : 1.0f / hue_adj);
 
-        dst() = float4(input.x, res, input.z, input.w);
+        dst() = float4(input.x, result, input.z, input.w);
     }
 };

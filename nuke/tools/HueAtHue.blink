@@ -4,11 +4,14 @@
 // Uses linear interpolation instead of a Gaussian basis sum,
 // making it fully invertible. Conceptually similar to Tetra.
 
-// 6 hue + 3 anchor.
+// 6 hue, 1 wrap, 2 anchor.
 #define N_POINTS 9
 
-kernel HueAtHue : ImageComputationKernel<ePixelWise>
-{
+inline float lerp(float a, float b, float t) {
+    return (1.0f - t) * a + t * b;
+}
+
+kernel HueAtHue : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
 
@@ -68,30 +71,26 @@ kernel HueAtHue : ImageComputationKernel<ePixelWise>
         }
     }
 
-    float lerp(float a, float b, float t) {
-        return (1.0f - t) * a + t * b;
-    }
-
     void process() {
         SampleType(src) input = src();
 
         float hue = input.x;
-        float res = 0.0f;
+        float result = 0.0f;
 
         if (hue <= curve[0].x) {
-            res = curve[0].y;
+            result = curve[0].y;
         } else if (hue >= curve[N_POINTS - 1].x) {
-            res = curve[N_POINTS - 1].y;
+            result = curve[N_POINTS - 1].y;
         } else {
             for (int i = 0; i < N_POINTS - 1; i += 1) {
                 if (curve[i].x <= hue && hue < curve[i + 1].x) {
                     float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
-                    res = lerp(curve[i].y, curve[i + 1].y, slope);
+                    result = lerp(curve[i].y, curve[i + 1].y, slope);
                     break;
                 }
             }
         }
 
-        dst() = float4(res, input.y, input.z, input.w);
+        dst() = float4(result, input.y, input.z, input.w);
     }
 };

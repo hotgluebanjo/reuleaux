@@ -1,6 +1,10 @@
 // https://github.com/hotgluebanjo
-kernel ValueAtSaturation : ImageComputationKernel<ePixelWise>
-{
+
+#define N_POINTS 6
+
+#define EPS 1e-6f
+
+kernel ValueAtSaturation : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
 
@@ -15,7 +19,7 @@ kernel ValueAtSaturation : ImageComputationKernel<ePixelWise>
         bool invert;
 
     local:
-        float2 curve[6];
+        float2 curve[N_POINTS];
 
     void define() {
         defineParam(point_1, "Point 1", float2(0.0f, 1.0f));
@@ -50,7 +54,7 @@ kernel ValueAtSaturation : ImageComputationKernel<ePixelWise>
         float sum = 0.0f;
         float weight_sum = 0.0f;
 
-        for (int i = 0; i < 6; i += 1) {
+        for (int i = 0; i < N_POINTS; i += 1) {
             float weight = gauss_basis(saturation - curve[i].x, range);
             sum += weight * curve[i].y;
             weight_sum += weight;
@@ -61,16 +65,16 @@ kernel ValueAtSaturation : ImageComputationKernel<ePixelWise>
         if (weight_sum == 0.0f) {
             saturation_curve = 1.0f;
         } else {
-            saturation_curve = max(sum / weight_sum, 1e-6f);
+            saturation_curve = max(sum / weight_sum, EPS);
         }
 
-        float res; 
+        float result; 
         if (invert) {
-            res = value / saturation_curve;
+            result = value / saturation_curve;
         } else {
-            res = value * saturation_curve;
+            result = value * saturation_curve;
         }
 
-        dst() = float4(input.x, input.y, res, input.w);
+        dst() = float4(input.x, input.y, result, input.w);
     }
 };

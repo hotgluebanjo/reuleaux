@@ -8,16 +8,16 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
     float saturation = p_G;
     float f_c = 1.0f - COMPRESSION;
 
-    float res;
+    float result;
     if (saturation < f_c) {
-        res = saturation;
+        result = saturation;
     } else {
         if (INVERT) {
-            res = (saturation - f_c) / (SMOOTHNESS - saturation + f_c) * SMOOTHNESS + f_c;
+            result = (saturation - f_c) / (SMOOTHNESS - saturation + f_c) * SMOOTHNESS + f_c;
         } else {
-            res = (saturation - f_c) / (SMOOTHNESS + saturation - f_c) * SMOOTHNESS + f_c;
+            result = (saturation - f_c) / (SMOOTHNESS + saturation - f_c) * SMOOTHNESS + f_c;
         }
     }
 
-    return make_float3(p_R, res, p_B);
+    return make_float3(p_R, result, p_B);
 }
