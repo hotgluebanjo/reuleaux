@@ -1,76 +1,89 @@
 // https://github.com/hotgluebanjo
 // https://github.com/calvinsilly
 
-// TODO: Less bad (names).
-
-// 6 hue + 1 anchor.
+// 6 hue + 3 anchor.
 #define N_HUE_POINTS 9
 
 // One per wrapped hue.
 #define N_CORNER_POINTS 6
 
-DEFINE_UI_PARAMS(OVERALL_SATURATION, Overall Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(OVERALL_VALUE, Overall Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+#define EPS 1e-6f
+
+DEFINE_UI_PARAMS(OVERALL_SAT, Overall Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(OVERALL_VAl, Overall Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
 
 DEFINE_UI_PARAMS(RED_HUE, Red Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
-DEFINE_UI_PARAMS(RED_SATURATION, Red Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(RED_VALUE, Red Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(RED_SAT, Red Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(RED_VAL, Red Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
 
 DEFINE_UI_PARAMS(YEL_HUE, Yellow Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
-DEFINE_UI_PARAMS(YEL_SATURATION, Yellow Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(YEL_VALUE, Yellow Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(YEL_SAT, Yellow Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(YEL_VAL, Yellow Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
 
 DEFINE_UI_PARAMS(GRN_HUE, Green Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
-DEFINE_UI_PARAMS(GRN_SATURATION, Green Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(GRN_VALUE, Green Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(GRN_SAT, Green Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(GRN_VAL, Green Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
 
 DEFINE_UI_PARAMS(CYN_HUE, Cyan Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
-DEFINE_UI_PARAMS(CYN_SATURATION, Cyan Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(CYN_VALUE, Cyan Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(CYN_SAT, Cyan Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(CYN_VAL, Cyan Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
 
 DEFINE_UI_PARAMS(BLU_HUE, Blue Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
-DEFINE_UI_PARAMS(BLU_SATURATION, Blue Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(BLU_VALUE, Blue Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(BLU_SAT, Blue Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(BLU_VAL, Blue Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
 
 DEFINE_UI_PARAMS(MAG_HUE, Magenta Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
-DEFINE_UI_PARAMS(MAG_SATURATION, Magenta Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
-DEFINE_UI_PARAMS(MAG_VALUE, Magenta Value, DCTLUI_SLIDER_FLOAT, 0.0, -1.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(MAG_SAT, Magenta Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(MAG_VAL, Magenta Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
 
 DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
 
-__DEVICE__ inline float tent_basis(float x, float s) {
-    return _fmaxf(1.0f - _fabs(x / s), 0.0f);
-}
-
-__DEVICE__ float wrap(float x) {
-    if (x < -0.5f) {
-        return x + 1.0f;
-    } else if (x > 0.5f) {
-        return x - 1.0f;
-    } else {
-        return x;
-    }
-}
-
-__DEVICE__ float spow(float x, float p) {
+__DEVICE__ inline float spow(float x, float p) {
     if (x > 0.0f) {
         return _powf(x, p);
     }
     return x;
 }
 
+__DEVICE__ float interp_linear(float2 *points, unsigned n_points, float x) {
+    if (x <= points[0].x) {
+        return points[0].y;
+    }
+
+    if (x >= points[n_points - 1].x) {
+        return points[n_points - 1].y;
+    }
+
+    for (int i = 0; i < n_points - 1; i += 1) {
+        if (points[i].x <= x && x < points[i + 1].x) {
+            float slope = (x - points[i].x) / (points[i + 1].x - points[i].x);
+            return _mix(points[i].y, points[i + 1].y, slope);
+        }
+    }
+
+    return 0.0f;
+}
+
 __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
-    float2 hue_curve[N_HUE_POINTS] = {
-        {5.0f / 6.0f - 1.0f, MAG_HUE + 5.0f / 6.0f - 1.0f},
-        {0.0f, RED_HUE},
-        {1.0f / 6.0f, YEL_HUE + 1.0f / 6.0f},
-        {2.0f / 6.0f, GRN_HUE + 2.0f / 6.0f},
-        {3.0f / 6.0f, CYN_HUE + 3.0f / 6.0f},
-        {4.0f / 6.0f, BLU_HUE + 4.0f / 6.0f},
-        {5.0f / 6.0f, MAG_HUE + 5.0f / 6.0f},
-        {1.0f, RED_HUE + 1.0f},
-        {1.0f / 6.0f + 1.0f, YEL_HUE + 1.0f / 6.0f + 1.0f},
-    };
+    float hue = p_R;
+    float sat = p_G;
+    float val = p_B;
+
+    float2 hue_curve[N_HUE_POINTS];
+
+    // Start and end anchors.
+    hue_curve[0] = make_float2(5.0f / 6.0f - 1.0f, MAG_HUE + 5.0f / 6.0f - 1.0f);
+    hue_curve[8] = make_float2(1.0f / 6.0f + 1.0f, YEL_HUE + 1.0f / 6.0f + 1.0f);
+
+    // Wrapped around origin.
+    hue_curve[1] = make_float2(0.0f, RED_HUE);
+    hue_curve[7] = make_float2(1.0f, RED_HUE + 1.0f);
+
+    hue_curve[2] = make_float2(1.0f / 6.0f, YEL_HUE + 1.0f / 6.0f);
+    hue_curve[3] = make_float2(2.0f / 6.0f, GRN_HUE + 2.0f / 6.0f);
+    hue_curve[4] = make_float2(3.0f / 6.0f, CYN_HUE + 3.0f / 6.0f);
+    hue_curve[5] = make_float2(4.0f / 6.0f, BLU_HUE + 4.0f / 6.0f);
+    hue_curve[6] = make_float2(5.0f / 6.0f, MAG_HUE + 5.0f / 6.0f);
 
     if (INVERT) {
         for (int i = 0; i < N_HUE_POINTS; i += 1) {
@@ -78,76 +91,45 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         }
     }
 
-    float saturation_curve[N_CORNER_POINTS] = {
-        RED_SATURATION,
-        YEL_SATURATION,
-        GRN_SATURATION,
-        CYN_SATURATION,
-        BLU_SATURATION,
-        MAG_SATURATION
+    float2 sat_curve[N_CORNER_POINTS] = {
+        {0.0f,        RED_SAT},
+        {1.0f / 6.0f, YEL_SAT},
+        {2.0f / 6.0f, GRN_SAT},
+        {3.0f / 6.0f, CYN_SAT},
+        {4.0f / 6.0f, BLU_SAT},
+        {5.0f / 6.0f, MAG_SAT}
     };
 
-    float value_curve[N_CORNER_POINTS] = {
-        RED_VALUE,
-        YEL_VALUE,
-        GRN_VALUE,
-        CYN_VALUE,
-        BLU_VALUE,
-        MAG_VALUE,
+    float2 val_curve[N_CORNER_POINTS] = {
+        {0.0f,        RED_VAL},
+        {1.0f / 6.0f, YEL_VAL},
+        {2.0f / 6.0f, GRN_VAL},
+        {3.0f / 6.0f, CYN_VAL},
+        {4.0f / 6.0f, BLU_VAL},
+        {5.0f / 6.0f, MAG_VAL}
     };
 
-    float hue = p_R;
-    float saturation = p_G;
-    float value = p_B;
+    float hue_res = interp_linear(hue_curve, N_HUE_POINTS, hue);
+    float hue_switch = INVERT ? hue : hue_res;
 
-    float hue_result = 0.0f;
-
-    if (hue <= hue_curve[0].x) {
-        hue_result = hue_curve[0].y;
-    } else if (hue >= hue_curve[N_HUE_POINTS - 1].x) {
-        hue_result = hue_curve[N_HUE_POINTS - 1].y;
-    } else {
-        for (int i = 0; i < N_HUE_POINTS - 1; i += 1) {
-            if (hue_curve[i].x <= hue && hue < hue_curve[i + 1].x) {
-                float slope = (hue - hue_curve[i].x) / (hue_curve[i + 1].x - hue_curve[i].x);
-                hue_result = _mix(hue_curve[i].y, hue_curve[i + 1].y, slope);
-                break;
-            }
-        }
-    }
-
-    float saturation_hue_factor = 0.0f;
-    float value_hue_factor = 0.0f;
-
-    // Everything could be handled by linear interpolation.
-    // Just not going to duplicate all that and TODO blinkscript doesn't like
-    // functions with array arguments.
-    for (int i = 0; i < N_CORNER_POINTS; i += 1) {
-        float cx = float(i) / 6.0f;
-        float hue_s = INVERT ? hue : hue_result;
-        float basis = tent_basis(wrap(hue_s - cx), 1.0f / 6.0f);
-
-        saturation_hue_factor += basis * saturation_curve[i];
-        value_hue_factor += basis * value_curve[i];
-    }
-
-    saturation_hue_factor *= OVERALL_SATURATION;
+    float sat_factor = interp_linear(sat_curve, N_CORNER_POINTS, hue_switch) * OVERALL_SAT;
+    float val_factor = interp_linear(val_curve, N_CORNER_POINTS, hue_switch) + OVERALL_VAl;
 
     if (!INVERT) {
-        saturation_hue_factor = 1.0f / saturation_hue_factor;
+        sat_factor = 1.0f / sat_factor;
     }
 
-    float saturation_result = spow(saturation, saturation_hue_factor);
+    float sat_res = spow(sat, sat_factor);
+    float sat_switch = INVERT ? sat : sat_res;
 
-    float saturation_s = INVERT ? saturation : saturation_result;
-    float value_factor = _fmaxf(1.0f - saturation_s * (value_hue_factor + OVERALL_VALUE), 1e-6f);
-    float value_result;
+    val_factor = _fmaxf(1.0f - sat_switch * val_factor, EPS);
+    float val_res;
 
     if (INVERT) {
-        value_result = value * value_factor;
+        val_res = val * val_factor;
     } else {
-        value_result = value / value_factor;
+        val_res = val / val_factor;
     }
 
-    return make_float3(hue_result, saturation_result, value_result);
+    return make_float3(hue_res, sat_res, val_res);
 }
