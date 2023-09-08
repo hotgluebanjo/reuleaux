@@ -9,6 +9,10 @@ inline float spow(float x, float p) {
     return x;
 }
 
+inline float lerp(float a, float b, float t) {
+    return (1.0f - t) * a + t * b;
+}
+
 kernel SaturationAtHue : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
@@ -45,16 +49,11 @@ kernel SaturationAtHue : ImageComputationKernel<ePixelWise> {
         curve[6] = float2(red.x + 1.0f, red.y);
     }
 
-    float lerp(float a, float b, float t) {
-        return (1.0f - t) * a + t * b;
-    }
-
     void process() {
         SampleType(src) input = src();
 
         float hue = input.x;
         float hue_adj = 0.0f;
-
 
         // This, along with ValueAtHue could be summed gaussians
         // and still be invertible, since it's not the curve that's

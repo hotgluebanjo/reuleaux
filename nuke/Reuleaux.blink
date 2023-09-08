@@ -42,8 +42,11 @@ float atan2_ols(float y, float x) {
     return q;
 }
 
-kernel Reuleaux : ImageComputationKernel<ePixelWise>
-{
+inline float max3(float x, float y, float z) {
+    return max(x, max(y, z));
+}
+
+kernel Reuleaux : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
 
@@ -67,7 +70,7 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
 
     float3 rgb_to_reuleaux(float3 rgb) {
         float3 rot = float3(
-            sqrt(2.0f)/6.0f * (2.0f*rgb.x - rgb.y - rgb.z),
+            sqrt(2.0f) / 6.0f * (2.0f * rgb.x - rgb.y - rgb.z),
             (rgb.y - rgb.z) / sqrt(6.0f),
             (rgb.x + rgb.y + rgb.z) / 3.0f
         );
@@ -75,7 +78,7 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         float3 reuleaux = float3(
             M_PI - atan2_ols(rot.y, -rot.x),
             rot.z == 0.0f ? 0.0f : length(float2(rot.x, rot.y)) / rot.z,
-            max(rgb.x, max(rgb.y, rgb.z))
+            max3(rgb.x, rgb.y, rgb.z)
         );
 
         return reuleaux / norm_mults;
@@ -85,14 +88,12 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         reuleaux *= norm_mults;
 
         float m = norm_mults.y
-            * max(
+            * max3(
                 cos(reuleaux.x),
-                max(
-                    cos(reuleaux.x + norm_mults.x/3.0f),
-                    cos(reuleaux.x - norm_mults.x/3.0f)
-                )
+                cos(reuleaux.x + norm_mults.x / 3.0f),
+                cos(reuleaux.x - norm_mults.x / 3.0f)
             )
-            + 1.0f/reuleaux.y;
+            + 1.0f / reuleaux.y;
 
         float3 ocs = float3(
             reuleaux.z * cos(reuleaux.x) / m,
@@ -101,9 +102,9 @@ kernel Reuleaux : ImageComputationKernel<ePixelWise>
         );
 
         float3 rgb = float3(
-            ocs.z - sqrt(3.0f/2.0f)*max(fabs(ocs.y) - sqrt(3.0f)*ocs.x, 0.0f),
-            ocs.z - sqrt(3.0f/2.0f)*(max(fabs(ocs.y), sqrt(3.0f)*ocs.x) - ocs.y),
-            ocs.z - sqrt(3.0f/2.0f)*(max(fabs(ocs.y), sqrt(3.0f)*ocs.x) + ocs.y)
+            ocs.z - sqrt(3.0f / 2.0f) * max(fabs(ocs.y) - sqrt(3.0f) * ocs.x, 0.0f),
+            ocs.z - sqrt(3.0f / 2.0f) * (max(fabs(ocs.y), sqrt(3.0f) * ocs.x) - ocs.y),
+            ocs.z - sqrt(3.0f / 2.0f) * (max(fabs(ocs.y), sqrt(3.0f) * ocs.x) + ocs.y)
         );
 
         return rgb;

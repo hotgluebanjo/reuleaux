@@ -8,6 +8,10 @@ __CONSTANT__ float PI_LOCAL = 3.141592653589f;
 // This is 100% going to cause complaints.
 #define NORM_MULTS make_float3(2.0f * PI_LOCAL, _sqrtf(2.0f), 1.0f)
 
+__DEVICE__ inline float max3(float x, float y, float z) {
+    return _fmaxf(x, _fmaxf(y, z));
+}
+
 __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
     float3 rot = {
         _sqrtf(2.0f)/6.0f * (2.0f*rgb.x - rgb.y - rgb.z),
@@ -18,7 +22,7 @@ __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
     float3 reuleaux = {
         PI_LOCAL - _atan2f(rot.y, -rot.x),
         rot.z == 0.0f ? 0.0f : _hypotf(rot.x, rot.y) / rot.z,
-        _fmaxf(rgb.x, _fmaxf(rgb.y, rgb.z))
+        max3(rgb.x, rgb.y, rgb.z)
     };
 
     return reuleaux / NORM_MULTS;
@@ -28,14 +32,12 @@ __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     reuleaux *= NORM_MULTS;
 
     float m = NORM_MULTS.y
-        * _fmaxf(
+        * max3(
             _cosf(reuleaux.x),
-            _fmaxf(
-                _cosf(reuleaux.x + NORM_MULTS.x/3.0f),
-                _cosf(reuleaux.x - NORM_MULTS.x/3.0f)
-            )
+            _cosf(reuleaux.x + NORM_MULTS.x / 3.0f),
+            _cosf(reuleaux.x - NORM_MULTS.x / 3.0f)
         )
-        + 1.0f/reuleaux.y;
+        + 1.0f / reuleaux.y;
 
     float3 ocs = {
         reuleaux.z * _cosf(reuleaux.x) / m,
@@ -44,9 +46,9 @@ __DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
     };
 
     float3 rgb = {
-        ocs.z - _sqrtf(3.0f/2.0f)*_fmaxf(_fabs(ocs.y) - _sqrtf(3.0f)*ocs.x, 0.0f),
-        ocs.z - _sqrtf(3.0f/2.0f)*(_fmaxf(_fabs(ocs.y), _sqrtf(3.0f)*ocs.x) - ocs.y),
-        ocs.z - _sqrtf(3.0f/2.0f)*(_fmaxf(_fabs(ocs.y), _sqrtf(3.0f)*ocs.x) + ocs.y)
+        ocs.z - _sqrtf(3.0f / 2.0f) * _fmaxf(_fabs(ocs.y) - _sqrtf(3.0f) * ocs.x, 0.0f),
+        ocs.z - _sqrtf(3.0f / 2.0f) * (_fmaxf(_fabs(ocs.y), _sqrtf(3.0f) * ocs.x) - ocs.y),
+        ocs.z - _sqrtf(3.0f / 2.0f) * (_fmaxf(_fabs(ocs.y), _sqrtf(3.0f) * ocs.x) + ocs.y)
     };
 
     return rgb;

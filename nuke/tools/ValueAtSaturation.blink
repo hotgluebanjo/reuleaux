@@ -68,7 +68,7 @@ kernel ValueAtSaturation : ImageComputationKernel<ePixelWise> {
             saturation_curve = max(sum / weight_sum, EPS);
         }
 
-        float result; 
+        float result;
         if (invert) {
             result = value / saturation_curve;
         } else {

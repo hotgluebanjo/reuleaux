@@ -18,6 +18,10 @@ inline float spow(float x, float p) {
     return x;
 }
 
+inline float lerp(float a, float b, float t) {
+    return (1.0f - t) * a + t * b;
+}
+
 kernel SaturationAtHueAuto : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
@@ -67,10 +71,6 @@ kernel SaturationAtHueAuto : ImageComputationKernel<ePixelWise> {
 
         // Red top anchor.
         curve[6] = float2(curve[0].x + 1.0f, curve[0].y);
-    }
-
-    float lerp(float a, float b, float t) {
-        return (1.0f - t) * a + t * b;
     }
 
     void process() {

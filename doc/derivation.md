@@ -4,7 +4,7 @@
 On the derivation of Reuleaux, from conception to a final set of transformations.
 
 ### Initial start
-The starting point conceptually consists of rotating and scaling the RGB cube so that the achromatic diagonal is along a unit-length axis, which when converted to cylindrical coordinates mimics a typical HCI color model.  
+The starting point conceptually consists of rotating and scaling the RGB cube so that the achromatic diagonal is along a unit-length axis, which when converted to cylindrical coordinates mimics a typical HCI color model.
 One of the problems that may arise is *clipping* which in turn induces skewing towards the compliments of the primaries when e.g. tweaking the saturation. Reuleaux avoids this by replacing the existing norm with the maximum of a given RGB triplet, for a detailed analysis on why the max is chosen; see [overview](overview.md).
 
 As a start, we'll modify the part of the transformation that goes from RGB to cylindrical so that it uses $\max(R, G, B)$ for the intensity component.
