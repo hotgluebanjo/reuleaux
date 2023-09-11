@@ -17,3 +17,30 @@ All tools expect HSV-like input and must be sandwiched between two instances of 
 - Reuleaux: RGB to Reuleaux.
 - Any tools.
 - Reuleaux: Reuleaux to RGB.
+
+## Issues
+
+If a script is entirely non-functional (i.e. it won't compile), report its error message. For DCTL, check Resolve's logs at one of:
+
+```
+Windows:
+C:\ProgramData\Blackmagic Design\DaVinci Resolve\Support\logs\
+C:\Users\<USERNAME>\AppData\Blackmagic Design\DaVinci Resolve\Support\logs\
+
+Mac:
+~/Library/Application Support/Blackmagic Design/DaVinci Resolve/logs/
+/Library/Application Support/Blackmagic Design/DaVinci Resolve/logs/
+
+Linux:
+~/.local/share/DaVinciResolve/logs/
+<RESOLVE_INSTALL_DIR>/logs/
+/opt/resolve/logs/
+```
+
+Should be `davinci_resolve.log`, `ResolveDebug.txt`, `rollinglog.txt` or similar.
+
+Search for the problematic DCTL and find all lines like:
+
+```
+path/to/LUT/reuleaux_resolve/NameOfDctl.dctl(NNNN): error: error description
+```
