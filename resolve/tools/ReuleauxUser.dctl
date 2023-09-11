@@ -45,7 +45,7 @@ __DEVICE__ inline float spow(float x, float p) {
     return x;
 }
 
-__DEVICE__ float interp_linear(float2 *points, unsigned n_points, float x) {
+__DEVICE__ float interp_linear(__PRIVATE__ float2 *points, int n_points, float x) {
     if (x <= points[0].x) {
         return points[0].y;
     }
