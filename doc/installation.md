@@ -37,9 +37,9 @@ Linux:
 /opt/resolve/logs/
 ```
 
-Should be `davinci_resolve.log`, `ResolveDebug.txt`, `rollinglog.txt` or similar.
+Should be `davinci_resolve.log`, `ResolveDebug.txt`, `rollinglog.txt` or similar. If none of those are there, generate a log archive from inside Resolve at **Help > Create Diagnostics Log on Desktop**.
 
-Search for the problematic DCTL and find all lines like:
+Search for the problematic DCTL and copy all lines like:
 
 ```
 path/to/LUT/reuleaux_resolve/NameOfDctl.dctl(NNNN): error: error description
