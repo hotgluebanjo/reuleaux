@@ -20,23 +20,22 @@ inline float lerp(float a, float b, float t) {
     return (1.0f - t) * a + t * b;
 }
 
-float interp_linear(float2 *points, int n_points, float x) {
-    if (x <= points[0].x) {
-        return points[0].y;
+float interp_linear(float2 *pts, int n_pts, float x) {
+    if (x <= pts[0].x) return pts[0].y;
+    if (x >= pts[n_pts - 1].x) return pts[n_pts - 1].y;
+
+    // Lower of the indices x is between.
+    int i = 0;
+    for (; i < n_pts - 1; i += 1) {
+        // x == x[i]. No need to interpolate.
+        if (fabs(pts[i].x - x) < EPS) return pts[i].y;
+
+        if (pts[i].x < x && x < pts[i + 1].x) break;
     }
 
-    if (x >= points[n_points - 1].x) {
-        return points[n_points - 1].y;
-    }
+    float slope = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
 
-    for (int i = 0; i < n_points - 1; i += 1) {
-        if (points[i].x <= x && x < points[i + 1].x) {
-            float slope = (x - points[i].x) / (points[i + 1].x - points[i].x);
-            return lerp(points[i].y, points[i + 1].y, slope);
-        }
-    }
-
-    return 0.0f;
+    return lerp(pts[i].y, pts[i + 1].y, slope);
 }
 
 kernel ReuleauxUser : ImageComputationKernel<ePixelWise> {

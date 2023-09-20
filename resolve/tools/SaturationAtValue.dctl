@@ -31,7 +31,7 @@ __DEVICE__ inline float _sqrf(float x) {
     return x * x;
 }
 
-__DEVICE__ float gauss_basis(float x, float s) {
+__DEVICE__ inline float gauss_basis(float x, float s) {
     return _expf(-_sqrf(x / s));
 }
 

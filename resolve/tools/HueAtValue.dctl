@@ -1,0 +1,82 @@
+// https://github.com/hotgluebanjo
+//
+// NOT INVERTIBLE.
+// Adjusts a range of hue in a range of value.
+
+#define N_POINTS 6
+
+DEFINE_UI_PARAMS(RED_HUE_X, Red hue x, DCTLUI_SLIDER_FLOAT, 0.0, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(RED_VAL_X, Red val x, DCTLUI_SLIDER_FLOAT, 0.5, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(RED_HUE_Y, Red hue y, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(YEL_HUE_X, Yellow hue x, DCTLUI_SLIDER_FLOAT, 0.166, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(YEL_VAL_X, Yellow val x, DCTLUI_SLIDER_FLOAT, 0.5, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(YEL_HUE_Y, Yellow hue y, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(GRN_HUE_X, Green hue x, DCTLUI_SLIDER_FLOAT, 0.333, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(GRN_VAL_X, Green val x, DCTLUI_SLIDER_FLOAT, 0.5, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(GRN_HUE_Y, Green hue y, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(CYN_HUE_X, Cyan hue x, DCTLUI_SLIDER_FLOAT, 0.5, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(CYN_VAL_X, Cyan val x, DCTLUI_SLIDER_FLOAT, 0.5, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(CYN_HUE_Y, Cyan hue y, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(BLU_HUE_X, Blue hue x, DCTLUI_SLIDER_FLOAT, 0.666, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(BLU_VAL_X, Blue val x, DCTLUI_SLIDER_FLOAT, 0.5, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(BLU_HUE_Y, Blue hue y, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(MAG_HUE_X, Magenta hue x, DCTLUI_SLIDER_FLOAT, 0.833, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(MAG_VAL_X, Magenta val x, DCTLUI_SLIDER_FLOAT, 0.5, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(MAG_HUE_Y, Magenta hue y, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+
+DEFINE_UI_PARAMS(HUE_RANGE, Hue range, DCTLUI_SLIDER_FLOAT, 0.166, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(VAL_RANGE, Value range, DCTLUI_SLIDER_FLOAT, 0.5, 0.0, 1.0, 0.001)
+
+// _powf is not trustworthy.
+__DEVICE__ inline float _sqrf(float x) {
+    return x * x;
+}
+
+__DEVICE__ inline float gauss_basis(float x, float s) {
+    return _expf(-_sqrf(x / s));
+}
+
+__DEVICE__ float wrap(float x) {
+    if (x < -0.5f) {
+        return x + 1.0f;
+    } else if (x > 0.5f) {
+        return x - 1.0f;
+    } else {
+        return x;
+    }
+}
+
+typedef struct {
+    float x0;
+    float x1;
+    float y;
+} SolvePoint;
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    if (HUE_RANGE < 1e-6f) return make_float3(p_R, p_G, p_B);
+
+    SolvePoint curve[N_POINTS] = {
+        {RED_HUE_X, RED_VAL_X, RED_HUE_Y},
+        {YEL_HUE_X, YEL_VAL_X, YEL_HUE_Y},
+        {GRN_HUE_X, GRN_VAL_X, GRN_HUE_Y},
+        {CYN_HUE_X, CYN_VAL_X, CYN_HUE_Y},
+        {BLU_HUE_X, BLU_VAL_X, BLU_HUE_Y},
+        {MAG_HUE_X, MAG_VAL_X, MAG_HUE_Y}
+    };
+
+    float hue = p_R;
+    float val = p_B;
+
+    for (int i = 0; i < N_POINTS; i += 1) {
+        float hue_mask = gauss_basis(wrap(hue - curve[i].x0), HUE_RANGE);
+        float val_adj = gauss_basis(val - curve[i].x1, VAL_RANGE) * curve[i].y;
+        hue = hue + val_adj * hue_mask;
+    }
+
+    return make_float3(hue, p_G, p_B);
+}

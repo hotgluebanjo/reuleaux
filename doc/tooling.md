@@ -12,6 +12,8 @@ Chromaticity fitting:
 
 - HueAtHue
 - SaturationAtHue(Auto)
+- HueAtSaturation
+- HueAtValue
 
 Depleting or "shaping":
 

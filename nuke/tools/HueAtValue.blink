@@ -1,0 +1,78 @@
+// https://github.com/hotgluebanjo
+//
+// NOT INVERTIBLE.
+// Adjusts a range of hue in a range of value.
+//
+// Another bad UI.
+// - `x` is the hue x-position or center
+// - `y` is the val x-position or center
+// - `z` is the hue y-position of offset
+
+#define N_POINTS 6
+
+inline float gauss_basis(float x, float s) {
+    return exp(-pow(x / s, 2.0f));
+}
+
+float wrap(float x) {
+    if (x < -0.5f) {
+        return x + 1.0f;
+    } else if (x > 0.5f) {
+        return x - 1.0f;
+    } else {
+        return x;
+    }
+}
+
+kernel HueAtValue : ImageComputationKernel<ePixelWise> {
+    Image<eRead, eAccessPoint, eEdgeClamped> src;
+    Image<eWrite> dst;
+
+    param:
+        float3 point_1;
+        float3 point_2;
+        float3 point_3;
+        float3 point_4;
+        float3 point_5;
+        float3 point_6;
+        float hue_range;
+        float val_range;
+
+    local:
+        float3 curve[N_POINTS];
+
+    void define() {
+        defineParam(point_1, "Red", float3(0.0f, 0.5f, 0.0f));
+        defineParam(point_2, "Yellow", float3(1.0f / 6.0f, 0.5f, 0.0f));
+        defineParam(point_3, "Green", float3(2.0f / 6.0f, 0.5f, 0.0f));
+        defineParam(point_4, "Cyan", float3(3.0f / 6.0f, 0.5f, 0.0f));
+        defineParam(point_5, "Blue", float3(4.0f / 6.0f, 0.5f, 0.0f));
+        defineParam(point_6, "Magenta", float3(5.0f / 6.0f, 0.5f, 0.0f));
+        defineParam(hue_range, "Hue Range", 1.0f / 6.0f);
+        defineParam(val_range, "Value Range", 0.5f);
+    }
+
+    void init() {
+        curve[0] = point_1;
+        curve[1] = point_2;
+        curve[2] = point_3;
+        curve[3] = point_4;
+        curve[4] = point_5;
+        curve[5] = point_6;
+    }
+
+    void process() {
+        SampleType(src) input = src();
+
+        float hue = input.x;
+        float val = input.z;
+
+        for (int i = 0; i < N_POINTS; i += 1) {
+            float hue_mask = gauss_basis(wrap(hue - curve[i].x), hue_range);
+            float val_adj = gauss_basis(val - curve[i].y, val_range) * curve[i].z;
+            hue = hue + val_adj * hue_mask;
+        }
+
+        dst() = float4(hue, input.y, input.z, input.w);
+    }
+};
