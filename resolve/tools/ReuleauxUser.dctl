@@ -60,7 +60,7 @@ __DEVICE__ float interp_linear(__PRIVATE__ float2 *pts, int n_pts, float x) {
 
     float slope = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
 
-    return lerp(pts[i].y, pts[i + 1].y, slope);
+    return _mix(pts[i].y, pts[i + 1].y, slope);
 }
 
 __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
