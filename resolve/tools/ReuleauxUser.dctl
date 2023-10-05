@@ -123,13 +123,13 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
     float sat_result = spow(sat, sat_factor);
     float sat_switch = INVERT ? sat : sat_result;
 
-    val_factor = _fmaxf(1.0f - sat_switch * val_factor, EPS);
+    val_factor = _fmaxf(1.0f + sat_switch * val_factor, EPS);
     float val_result;
 
     if (INVERT) {
-        val_result = val * val_factor;
-    } else {
         val_result = val / val_factor;
+    } else {
+        val_result = val * val_factor;
     }
 
     return make_float3(hue_result, sat_result, val_result);

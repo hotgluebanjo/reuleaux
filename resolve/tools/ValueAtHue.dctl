@@ -57,13 +57,13 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
         }
     }
 
-    float factor = _fmaxf(1.0f - saturation * hue_adj, 1e-6f);
+    float factor = _fmaxf(1.0f + saturation * hue_adj, 1e-6f);
     float result;
 
     if (INVERT) {
-        result = value * factor;
-    } else {
         result = value / factor;
+    } else {
+        result = value * factor;
     }
 
     return make_float3(p_R, p_G, result);

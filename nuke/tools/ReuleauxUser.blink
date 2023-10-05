@@ -166,13 +166,13 @@ kernel ReuleauxUser : ImageComputationKernel<ePixelWise> {
         float sat_result = spow(sat, sat_factor);
         float sat_switch = invert ? sat : sat_result;
 
-        val_factor = max(1.0f - sat_switch * val_factor, EPS);
+        val_factor = max(1.0f + sat_switch * val_factor, EPS);
         float val_result;
 
         if (invert) {
-            val_result = val * val_factor;
-        } else {
             val_result = val / val_factor;
+        } else {
+            val_result = val * val_factor;
         }
 
         dst() = float4(hue_result, sat_result, val_result, hsv.w);

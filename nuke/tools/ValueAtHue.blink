@@ -65,13 +65,13 @@ kernel ValueAtHue : ImageComputationKernel<ePixelWise> {
             }
         }
 
-        float factor = max(1.0f - input.y * hue_adj, EPS);
+        float factor = max(1.0f + input.y * hue_adj, EPS);
         float result;
 
         if (invert) {
-            result = input.z * factor;
-        } else {
             result = input.z / factor;
+        } else {
+            result = input.z * factor;
         }
 
         dst() = float4(input.x, input.y, result, input.w);
