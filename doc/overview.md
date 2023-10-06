@@ -50,7 +50,7 @@ Cone Coordinates | Cone Coordinates-like
 ---------------- | ---------------------
 <img src="https://user-images.githubusercontent.com/66244111/261484495-8d247c58-7edb-4f8b-ab09-e2c6d06e6d26.jpg" width="200px"> | <img src="https://user-images.githubusercontent.com/66244111/262818850-1df2c3b2-d430-4a7d-a9dd-37d508e792e8.jpg" width="200px">
 
-## $\max(R, G, B)$
+## Max RGB
 
 The mechanics and implications of the max are surprisingly difficult to grasp when the scope is the entire chain. Following is its obvious benefits mixed in with plenty of speculation. A mean is used for comparison, but its advantages apply against most other measures.
 
