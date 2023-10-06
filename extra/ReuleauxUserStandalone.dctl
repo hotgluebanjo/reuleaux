@@ -1,0 +1,189 @@
+// https://github.com/hotgluebanjo
+// https://github.com/calvinsilly
+//
+// Concatenates the Reuleaux transforms with ReuleauxUser.
+
+// 6 hue, 1 wrap, 2 anchor.
+#define N_HUE_POINTS 9
+
+// 6 hue, 1 wrap.
+#define N_CORNER_POINTS 7
+
+#define EPS 1e-6f
+
+DEFINE_UI_PARAMS(OVERALL_SAT, Overall Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(OVERALL_VAl, Overall Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
+
+DEFINE_UI_PARAMS(RED_HUE, Red Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+DEFINE_UI_PARAMS(RED_SAT, Red Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(RED_VAL, Red Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
+
+DEFINE_UI_PARAMS(YEL_HUE, Yellow Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+DEFINE_UI_PARAMS(YEL_SAT, Yellow Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(YEL_VAL, Yellow Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
+
+DEFINE_UI_PARAMS(GRN_HUE, Green Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+DEFINE_UI_PARAMS(GRN_SAT, Green Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(GRN_VAL, Green Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
+
+DEFINE_UI_PARAMS(CYN_HUE, Cyan Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+DEFINE_UI_PARAMS(CYN_SAT, Cyan Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(CYN_VAL, Cyan Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
+
+DEFINE_UI_PARAMS(BLU_HUE, Blue Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+DEFINE_UI_PARAMS(BLU_SAT, Blue Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(BLU_VAL, Blue Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
+
+DEFINE_UI_PARAMS(MAG_HUE, Magenta Hue, DCTLUI_SLIDER_FLOAT, 0.0, -0.166, 0.166, 0.001)
+DEFINE_UI_PARAMS(MAG_SAT, Magenta Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(MAG_VAL, Magenta Value, DCTLUI_SLIDER_FLOAT, 0.0, -3.0, 3.0, 0.001)
+
+DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
+
+__CONSTANT__ float PI_LOCAL = 3.141592653589f;
+
+#define NORM_MULTS make_float3(2.0f * PI_LOCAL, _sqrtf(2.0f), 1.0f)
+
+__DEVICE__ inline float max3(float x, float y, float z) {
+    return _fmaxf(x, _fmaxf(y, z));
+}
+
+__DEVICE__ inline float spow(float x, float p) {
+    if (x > 0.0f) {
+        return _powf(x, p);
+    }
+    return x;
+}
+
+__DEVICE__ float interp_linear(__PRIVATE__ float2 *pts, int n_pts, float x) {
+    if (x <= pts[0].x) return pts[0].y;
+    if (x >= pts[n_pts - 1].x) return pts[n_pts - 1].y;
+
+    // Lower of the indices x is between.
+    int i = 0;
+    for (; i < n_pts - 1; i += 1) {
+        // x == x[i]. No need to interpolate.
+        if (_fabs(pts[i].x - x) < EPS) return pts[i].y;
+
+        if (pts[i].x < x && x < pts[i + 1].x) break;
+    }
+
+    float slope = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
+
+    return _mix(pts[i].y, pts[i + 1].y, slope);
+}
+
+__DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
+    float3 rot = {
+        _sqrtf(2.0f)/6.0f * (2.0f*rgb.x - rgb.y - rgb.z),
+        (rgb.y - rgb.z) / _sqrtf(6.0f),
+        (rgb.x + rgb.y + rgb.z) / 3.0f
+    };
+
+    float3 reuleaux = {
+        PI_LOCAL - _atan2f(rot.y, -rot.x),
+        rot.z == 0.0f ? 0.0f : _hypotf(rot.x, rot.y) / rot.z,
+        max3(rgb.x, rgb.y, rgb.z)
+    };
+
+    return reuleaux / NORM_MULTS;
+}
+
+__DEVICE__ float3 reuleaux_to_rgb(float3 reuleaux) {
+    reuleaux *= NORM_MULTS;
+
+    float m = NORM_MULTS.y
+        * max3(
+            _cosf(reuleaux.x),
+            _cosf(reuleaux.x + NORM_MULTS.x / 3.0f),
+            _cosf(reuleaux.x - NORM_MULTS.x / 3.0f)
+        )
+        + 1.0f / reuleaux.y;
+
+    float3 ocs = {
+        reuleaux.z * _cosf(reuleaux.x) / m,
+        reuleaux.z * _sinf(reuleaux.x) / m,
+        reuleaux.z
+    };
+
+    float3 rgb = {
+        ocs.z - _sqrtf(3.0f / 2.0f) * _fmaxf(_fabs(ocs.y) - _sqrtf(3.0f) * ocs.x, 0.0f),
+        ocs.z - _sqrtf(3.0f / 2.0f) * (_fmaxf(_fabs(ocs.y), _sqrtf(3.0f) * ocs.x) - ocs.y),
+        ocs.z - _sqrtf(3.0f / 2.0f) * (_fmaxf(_fabs(ocs.y), _sqrtf(3.0f) * ocs.x) + ocs.y)
+    };
+
+    return rgb;
+}
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    float3 reuleaux = rgb_to_reuleaux(make_float3(p_R, p_G, p_B));
+    float hue = reuleaux.x;
+    float sat = reuleaux.y;
+    float val = reuleaux.z;
+
+    float2 hue_curve[N_HUE_POINTS];
+
+    // Start and end anchors.
+    hue_curve[0] = make_float2(5.0f / 6.0f, MAG_HUE + 5.0f / 6.0f) - 1.0f;
+    hue_curve[8] = make_float2(1.0f / 6.0f, YEL_HUE + 1.0f / 6.0f) + 1.0f;
+
+    // Wrapping anchor.
+    hue_curve[1] = make_float2(0.0f, RED_HUE);
+    hue_curve[7] = make_float2(1.0f, RED_HUE + 1.0f);
+
+    hue_curve[2] = make_float2(1.0f / 6.0f, YEL_HUE + 1.0f / 6.0f);
+    hue_curve[3] = make_float2(2.0f / 6.0f, GRN_HUE + 2.0f / 6.0f);
+    hue_curve[4] = make_float2(3.0f / 6.0f, CYN_HUE + 3.0f / 6.0f);
+    hue_curve[5] = make_float2(4.0f / 6.0f, BLU_HUE + 4.0f / 6.0f);
+    hue_curve[6] = make_float2(5.0f / 6.0f, MAG_HUE + 5.0f / 6.0f);
+
+    if (INVERT) {
+        for (int i = 0; i < N_HUE_POINTS; i += 1) {
+            hue_curve[i] = make_float2(hue_curve[i].y, hue_curve[i].x);
+        }
+    }
+
+    float2 sat_curve[N_CORNER_POINTS] = {
+        {0.0f,        RED_SAT},
+        {1.0f / 6.0f, YEL_SAT},
+        {2.0f / 6.0f, GRN_SAT},
+        {3.0f / 6.0f, CYN_SAT},
+        {4.0f / 6.0f, BLU_SAT},
+        {5.0f / 6.0f, MAG_SAT},
+        {1.0f,        RED_SAT}
+    };
+
+    float2 val_curve[N_CORNER_POINTS] = {
+        {0.0f,        RED_VAL},
+        {1.0f / 6.0f, YEL_VAL},
+        {2.0f / 6.0f, GRN_VAL},
+        {3.0f / 6.0f, CYN_VAL},
+        {4.0f / 6.0f, BLU_VAL},
+        {5.0f / 6.0f, MAG_VAL},
+        {1.0f,        RED_VAL}
+    };
+
+    float hue_result = interp_linear(hue_curve, N_HUE_POINTS, hue);
+    float hue_switch = INVERT ? hue : hue_result;
+
+    float sat_factor = interp_linear(sat_curve, N_CORNER_POINTS, hue_switch) * OVERALL_SAT;
+    float val_factor = interp_linear(val_curve, N_CORNER_POINTS, hue_switch) + OVERALL_VAl;
+
+    if (!INVERT) {
+        sat_factor = 1.0f / sat_factor;
+    }
+
+    float sat_result = spow(sat, sat_factor);
+    float sat_switch = INVERT ? sat : sat_result;
+
+    val_factor = _fmaxf(1.0f + sat_switch * val_factor, EPS);
+    float val_result;
+
+    if (INVERT) {
+        val_result = val / val_factor;
+    } else {
+        val_result = val * val_factor;
+    }
+
+    return reuleaux_to_rgb(make_float3(hue_result, sat_result, val_result));
+}

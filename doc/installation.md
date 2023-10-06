@@ -18,6 +18,8 @@ All tools expect HSV-like input and must be sandwiched between two instances of 
 - Any tools.
 - Reuleaux: Reuleaux to RGB.
 
+The only exception is [ReuleauxUserStandalone](../extra/ReuleauxUserStandalone.dctl), which has this setup built in for convenience. It is not included in releases and must be downloaded directly.
+
 ## Issues
 
 If a script is entirely non-functional (i.e. it won't compile), report its error message. For DCTL, check Resolve's logs at one of:
