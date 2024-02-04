@@ -1,11 +1,35 @@
 // https://github.com/hotgluebanjo
 
-#define N_POINTS 7
+#define N_POINTS 9
 
 #define EPS 1e-6f
 
 inline float lerp(float a, float b, float t) {
     return (1.0f - t) * a + t * b;
+}
+
+float interp_linear(float2 *pts, int n_pts, float x) {
+    if (x <= pts[0].x) {
+        return pts[0].y;
+    }
+
+    if (x >= pts[n_pts - 1].x) {
+        return pts[n_pts - 1].y;
+    }
+
+    int i = 0;
+    int upper = n_pts - 1;
+    while (i != upper - 1) {
+        int m = i + (upper - i) / 2;
+        if (x >= pts[m].x) {
+            i = m;
+        } else {
+            upper = m;
+        }
+    }
+
+    float t = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
+    return lerp(pts[i].y, pts[i + 1].y, t);
 }
 
 kernel ValueAtHue : ImageComputationKernel<ePixelWise> {
@@ -35,43 +59,40 @@ kernel ValueAtHue : ImageComputationKernel<ePixelWise> {
     }
 
     void init() {
-        curve[0] = red;
-        curve[1] = yel;
-        curve[2] = grn;
-        curve[3] = cyn;
-        curve[4] = blu;
-        curve[5] = mag;
-        curve[6] = float2(red.x + 1.0f, red.y);
+        if (red.x > 0.5f) {
+            curve[1] = float2(red.x - 1.0f, red.y);
+            curve[7] = red;
+        } else {
+            curve[1] = red;
+            curve[7] = float2(red.x + 1.0f, red.y);
+        }
+
+        curve[0] = float2(mag.x - 1.0f, mag.y);
+        curve[8] = float2(yel.x + 1.0f, yel.y);
+
+        curve[2] = yel;
+        curve[3] = grn;
+        curve[4] = cyn;
+        curve[5] = blu;
+        curve[6] = mag;
     }
 
     void process() {
         SampleType(src) input = src();
 
         float hue = input.x;
-        float hue_adj = 0.0f;
+        float sat = input.y;
+        float val = input.z;
 
-        // Could extrapolate here instead.
-        if (hue <= curve[0].x) {
-            hue_adj = curve[0].y;
-        } else if (hue >= curve[N_POINTS - 1].x) {
-            hue_adj = curve[N_POINTS - 1].y;
-        } else {
-            for (int i = 0; i < N_POINTS - 1; i += 1) {
-                if (curve[i].x <= hue && hue < curve[i + 1].x) {
-                    float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
-                    hue_adj = lerp(curve[i].y, curve[i + 1].y, slope);
-                    break;
-                }
-            }
-        }
+        float hue_adj = interp_linear(curve, N_POINTS, hue);
 
-        float factor = max(1.0f + input.y * hue_adj, EPS);
+        float factor = max(1.0f + sat * hue_adj, EPS);
         float result;
 
         if (invert) {
-            result = input.z / factor;
+            result = val / factor;
         } else {
-            result = input.z * factor;
+            result = val * factor;
         }
 
         dst() = float4(input.x, input.y, result, input.w);

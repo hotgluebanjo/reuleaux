@@ -7,19 +7,41 @@
 // Custom types won't work here. Check the DCTL for a better
 // implementation.
 
-// 6 hue, 1 wrap. Anchors so far haven't been necessary.
-
-#define N_POINTS 7
+#define N_POINTS 9
 
 inline float spow(float x, float p) {
-    if (x > 0.0f) {
-        return pow(x, p);
+    if (x < 0.0f) {
+        return -pow(-x, p);
     }
-    return x;
+    return pow(x, p);
 }
 
 inline float lerp(float a, float b, float t) {
     return (1.0f - t) * a + t * b;
+}
+
+float interp_linear(float2 *pts, int n_pts, float x) {
+    if (x <= pts[0].x) {
+        return pts[0].y;
+    }
+
+    if (x >= pts[n_pts - 1].x) {
+        return pts[n_pts - 1].y;
+    }
+
+    int i = 0;
+    int upper = n_pts - 1;
+    while (i != upper - 1) {
+        int m = i + (upper - i) / 2;
+        if (x >= pts[m].x) {
+            i = m;
+        } else {
+            upper = m;
+        }
+    }
+
+    float t = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
+    return lerp(pts[i].y, pts[i + 1].y, t);
 }
 
 kernel SaturationAtHueAuto : ImageComputationKernel<ePixelWise> {
@@ -57,43 +79,39 @@ kernel SaturationAtHueAuto : ImageComputationKernel<ePixelWise> {
         params_list[4] = blu;
         params_list[5] = mag;
 
-        for (int i = 0; i < N_POINTS - 1; i += 1) {
-            curve[i].x = params_list[i].x;
+        for (int i = 1; i < N_POINTS - 2; i += 1) {
+            int j = i - 1;
+            curve[i].x = params_list[j].x;
 
-            if (0.0f < params_list[i].y && params_list[i].y < 1.0f &&
-                0.0f < params_list[i].z && params_list[i].z < 1.0f)
+            if (0.0f < params_list[j].y && params_list[j].y < 1.0f &&
+                0.0f < params_list[j].z && params_list[j].z < 1.0f)
             {
-                curve[i].y = log(params_list[i].y) / log(params_list[i].z);
+                curve[i].y = log(params_list[j].y) / log(params_list[j].z);
             } else {
                 curve[i].y = 1.0f;
             }
         }
 
-        // Red top anchor.
-        curve[6] = float2(curve[0].x + 1.0f, curve[0].y);
+        if (curve[1].x > 0.5f) {
+            curve[1] = float2(curve[1].x - 1.0f, curve[1].y);
+            curve[7] = curve[1];
+        } else {
+            curve[1] = curve[1];
+            curve[7] = float2(curve[1].x + 1.0f, curve[1].y);
+        }
+
+        curve[0] = float2(curve[6].x - 1.0f, curve[6].y);
+        curve[8] = float2(curve[2].x + 1.0f, curve[2].y);
     }
 
     void process() {
         SampleType(src) input = src();
 
         float hue = input.x;
-        float hue_adj = 0.0f;
+        float sat = input.y;
 
-        if (hue <= curve[0].x) {
-            hue_adj = curve[0].y;
-        } else if (hue >= curve[N_POINTS - 1].x) {
-            hue_adj = curve[N_POINTS - 1].y;
-        } else {
-            for (int i = 0; i < N_POINTS - 1; i += 1) {
-                if (curve[i].x <= hue && hue < curve[i + 1].x) {
-                    float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
-                    hue_adj = lerp(curve[i].y, curve[i + 1].y, slope);
-                    break;
-                }
-            }
-        }
-
-        float result = spow(input.y, invert ? hue_adj : 1.0f / hue_adj);
+        float hue_adj = interp_linear(curve, N_POINTS, hue);
+        float result = spow(sat, invert ? hue_adj : 1.0f / hue_adj);
 
         dst() = float4(input.x, result, input.z, input.w);
     }

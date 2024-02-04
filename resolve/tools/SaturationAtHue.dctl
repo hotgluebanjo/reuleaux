@@ -1,71 +1,89 @@
 // https://github.com/hotgluebanjo
 
-// TODO: Wrapping of red hue < 0 > 0.5.
-
-#define N_POINTS 7
+#define N_POINTS 9
 
 DEFINE_UI_PARAMS(RED_HUE, Red Hue, DCTLUI_SLIDER_FLOAT, 0.0, 0.0, 1.0, 0.001)
-DEFINE_UI_PARAMS(RED_SATURATION, Red Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(RED_SAT, Red Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 
 DEFINE_UI_PARAMS(YEL_HUE, Yellow Hue, DCTLUI_SLIDER_FLOAT, 0.166, 0.0, 0.333, 0.001)
-DEFINE_UI_PARAMS(YEL_SATURATION, Yellow Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(YEL_SAT, Yellow Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 
 DEFINE_UI_PARAMS(GRN_HUE, Green Hue, DCTLUI_SLIDER_FLOAT, 0.333, 0.166, 0.5, 0.001)
-DEFINE_UI_PARAMS(GRN_SATURATION, Green Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(GRN_SAT, Green Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 
 DEFINE_UI_PARAMS(CYN_HUE, Cyan Hue, DCTLUI_SLIDER_FLOAT, 0.5, 0.333, 0.666, 0.001)
-DEFINE_UI_PARAMS(CYN_SATURATION, Cyan Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(CYN_SAT, Cyan Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 
 DEFINE_UI_PARAMS(BLU_HUE, Blue Hue, DCTLUI_SLIDER_FLOAT, 0.666, 0.5, 0.8333, 0.001)
-DEFINE_UI_PARAMS(BLU_SATURATION, Blue Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(BLU_SAT, Blue Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 
 DEFINE_UI_PARAMS(MAG_HUE, Magenta Hue, DCTLUI_SLIDER_FLOAT, 0.833, 0.666, 1.0, 0.001)
-DEFINE_UI_PARAMS(MAG_SATURATION, Magenta Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(MAG_SAT, Magenta Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
 
 DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
 
 __DEVICE__ inline float spow(float x, float p) {
-    if (x > 0.0f) {
-        return _powf(x, p);
+    if (x < 0.0f) {
+        return -_powf(-x, p);
     }
-    return x;
+    return _powf(x, p);
+}
+
+__DEVICE__ float interp_linear(__PRIVATE__ float2 *pts, int n_pts, float x) {
+    if (x <= pts[0].x) {
+        return pts[0].y;
+    }
+
+    if (x >= pts[n_pts - 1].x) {
+        return pts[n_pts - 1].y;
+    }
+
+    int i = 0;
+    int upper = n_pts - 1;
+    while (i != upper - 1) {
+        int m = i + (upper - i) / 2;
+        if (x >= pts[m].x) {
+            i = m;
+        } else {
+            upper = m;
+        }
+    }
+
+    float t = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
+    return _mix(pts[i].y, pts[i + 1].y, t);
 }
 
 __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
-    float2 curve[N_POINTS] = {
-        {RED_HUE, RED_SATURATION},
-        {YEL_HUE, YEL_SATURATION},
-        {GRN_HUE, GRN_SATURATION},
-        {CYN_HUE, CYN_SATURATION},
-        {BLU_HUE, BLU_SATURATION},
-        {MAG_HUE, MAG_SATURATION},
-        {RED_HUE + 1.0f, RED_SATURATION}
-    };
+    float2 curve[N_POINTS];
+
+    if (RED_HUE > 0.5f) {
+        curve[1] = make_float2(RED_HUE - 1.0f, RED_SAT);
+        curve[7] = make_float2(RED_HUE, RED_SAT);
+    } else {
+        curve[1] = make_float2(RED_HUE, RED_SAT);
+        curve[7] = make_float2(RED_HUE + 1.0f, RED_SAT);
+    }
+
+    curve[0] = make_float2(MAG_HUE - 1.0f, MAG_SAT);
+    curve[8] = make_float2(YEL_HUE + 1.0f, YEL_SAT);
+
+    curve[2] = make_float2(RED_HUE, RED_SAT);
+    curve[3] = make_float2(YEL_HUE, YEL_SAT);
+    curve[4] = make_float2(GRN_HUE, GRN_SAT);
+    curve[5] = make_float2(CYN_HUE, CYN_SAT);
+    curve[6] = make_float2(BLU_HUE, BLU_SAT);
 
     float hue = p_R;
-    float saturation = p_G;
-    float hue_adj = 0.0f;
+    float sat = p_G;
 
     // This, along with ValueAtHue could be summed gaussians
     // and still be invertible, since it's not the curve that's
     // inverted, just the factor.
     //
     // Sticking with linear interpolation for consistency.
-    if (hue <= curve[0].x) {
-        hue_adj = curve[0].y;
-    } else if (hue >= curve[N_POINTS - 1].x) {
-        hue_adj = curve[N_POINTS - 1].y;
-    } else {
-        for (int i = 0; i < N_POINTS - 1; i += 1) {
-            if (curve[i].x <= hue && hue < curve[i + 1].x) {
-                float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
-                hue_adj = _mix(curve[i].y, curve[i + 1].y, slope);
-                break;
-            }
-        }
-    }
+    float hue_adj = interp_linear(curve, N_POINTS, hue);
 
-    float result = spow(saturation, INVERT ? hue_adj : 1.0f / hue_adj);
+    float result = spow(sat, INVERT ? hue_adj : 1.0f / hue_adj);
 
     return make_float3(p_R, result, p_B);
 }

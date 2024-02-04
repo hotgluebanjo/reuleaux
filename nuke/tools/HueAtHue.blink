@@ -11,6 +11,30 @@ inline float lerp(float a, float b, float t) {
     return (1.0f - t) * a + t * b;
 }
 
+float interp_linear(float2 *pts, int n_pts, float x) {
+    if (x <= pts[0].x) {
+        return pts[0].y;
+    }
+
+    if (x >= pts[n_pts - 1].x) {
+        return pts[n_pts - 1].y;
+    }
+
+    int i = 0;
+    int upper = n_pts - 1;
+    while (i != upper - 1) {
+        int m = i + (upper - i) / 2;
+        if (x >= pts[m].x) {
+            i = m;
+        } else {
+            upper = m;
+        }
+    }
+
+    float t = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
+    return lerp(pts[i].y, pts[i + 1].y, t);
+}
+
 kernel HueAtHue : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
@@ -74,22 +98,7 @@ kernel HueAtHue : ImageComputationKernel<ePixelWise> {
     void process() {
         SampleType(src) input = src();
 
-        float hue = input.x;
-        float result = 0.0f;
-
-        if (hue <= curve[0].x) {
-            result = curve[0].y;
-        } else if (hue >= curve[N_POINTS - 1].x) {
-            result = curve[N_POINTS - 1].y;
-        } else {
-            for (int i = 0; i < N_POINTS - 1; i += 1) {
-                if (curve[i].x <= hue && hue < curve[i + 1].x) {
-                    float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
-                    result = lerp(curve[i].y, curve[i + 1].y, slope);
-                    break;
-                }
-            }
-        }
+        float result = interp_linear(curve, N_POINTS, input.x);
 
         dst() = float4(result, input.y, input.z, input.w);
     }

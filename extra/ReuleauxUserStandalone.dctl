@@ -1,13 +1,8 @@
 // https://github.com/hotgluebanjo
 // https://github.com/calvinsilly
-//
-// Concatenates the Reuleaux transforms with ReuleauxUser.
 
 // 6 hue, 1 wrap, 2 anchor.
-#define N_HUE_POINTS 9
-
-// 6 hue, 1 wrap.
-#define N_CORNER_POINTS 7
+#define N_POINTS 9
 
 #define EPS 1e-6f
 
@@ -49,28 +44,34 @@ __DEVICE__ inline float max3(float x, float y, float z) {
 }
 
 __DEVICE__ inline float spow(float x, float p) {
-    if (x > 0.0f) {
-        return _powf(x, p);
+    if (x < 0.0f) {
+        return -_powf(-x, p);
     }
-    return x;
+    return _powf(x, p);
 }
 
 __DEVICE__ float interp_linear(__PRIVATE__ float2 *pts, int n_pts, float x) {
-    if (x <= pts[0].x) return pts[0].y;
-    if (x >= pts[n_pts - 1].x) return pts[n_pts - 1].y;
-
-    // Lower of the indices x is between.
-    int i = 0;
-    for (; i < n_pts - 1; i += 1) {
-        // x == x[i]. No need to interpolate.
-        if (_fabs(pts[i].x - x) < EPS) return pts[i].y;
-
-        if (pts[i].x < x && x < pts[i + 1].x) break;
+    if (x <= pts[0].x) {
+        return pts[0].y;
     }
 
-    float slope = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
+    if (x >= pts[n_pts - 1].x) {
+        return pts[n_pts - 1].y;
+    }
 
-    return _mix(pts[i].y, pts[i + 1].y, slope);
+    int i = 0;
+    int upper = n_pts - 1;
+    while (i != upper - 1) {
+        int m = i + (upper - i) / 2;
+        if (x >= pts[m].x) {
+            i = m;
+        } else {
+            upper = m;
+        }
+    }
+
+    float t = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
+    return _mix(pts[i].y, pts[i + 1].y, t);
 }
 
 __DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
@@ -121,53 +122,53 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
     float sat = reuleaux.y;
     float val = reuleaux.z;
 
-    float2 hue_curve[N_HUE_POINTS];
-
-    // Start and end anchors.
-    hue_curve[0] = make_float2(5.0f / 6.0f, MAG_HUE + 5.0f / 6.0f) - 1.0f;
-    hue_curve[8] = make_float2(1.0f / 6.0f, YEL_HUE + 1.0f / 6.0f) + 1.0f;
-
-    // Wrapping anchor.
-    hue_curve[1] = make_float2(0.0f, RED_HUE);
-    hue_curve[7] = make_float2(1.0f, RED_HUE + 1.0f);
-
-    hue_curve[2] = make_float2(1.0f / 6.0f, YEL_HUE + 1.0f / 6.0f);
-    hue_curve[3] = make_float2(2.0f / 6.0f, GRN_HUE + 2.0f / 6.0f);
-    hue_curve[4] = make_float2(3.0f / 6.0f, CYN_HUE + 3.0f / 6.0f);
-    hue_curve[5] = make_float2(4.0f / 6.0f, BLU_HUE + 4.0f / 6.0f);
-    hue_curve[6] = make_float2(5.0f / 6.0f, MAG_HUE + 5.0f / 6.0f);
+    float2 hue_curve[N_POINTS] = {
+        {5.0f / 6.0f - 1.0f, MAG_HUE + 5.0f / 6.0f - 1.0f},
+        {0.0f,               RED_HUE},
+        {1.0f / 6.0f,        YEL_HUE + 1.0f / 6.0f},
+        {2.0f / 6.0f,        GRN_HUE + 2.0f / 6.0f},
+        {3.0f / 6.0f,        CYN_HUE + 3.0f / 6.0f},
+        {4.0f / 6.0f,        BLU_HUE + 4.0f / 6.0f},
+        {5.0f / 6.0f,        MAG_HUE + 5.0f / 6.0f},
+        {1.0f,               RED_HUE + 1.0f},
+        {1.0f / 6.0f + 1.0f, YEL_HUE + 1.0f / 6.0f + 1.0f}
+    };
 
     if (INVERT) {
-        for (int i = 0; i < N_HUE_POINTS; i += 1) {
+        for (int i = 0; i < N_POINTS; i += 1) {
             hue_curve[i] = make_float2(hue_curve[i].y, hue_curve[i].x);
         }
     }
 
-    float2 sat_curve[N_CORNER_POINTS] = {
-        {0.0f,        RED_SAT},
-        {1.0f / 6.0f, YEL_SAT},
-        {2.0f / 6.0f, GRN_SAT},
-        {3.0f / 6.0f, CYN_SAT},
-        {4.0f / 6.0f, BLU_SAT},
-        {5.0f / 6.0f, MAG_SAT},
-        {1.0f,        RED_SAT}
+    float2 sat_curve[N_POINTS] = {
+        {5.0f / 6.0f - 1.0f, MAG_SAT},
+        {0.0f,               RED_SAT},
+        {1.0f / 6.0f,        YEL_SAT},
+        {2.0f / 6.0f,        GRN_SAT},
+        {3.0f / 6.0f,        CYN_SAT},
+        {4.0f / 6.0f,        BLU_SAT},
+        {5.0f / 6.0f,        MAG_SAT},
+        {1.0f,               RED_SAT},
+        {1.0f / 6.0f + 1.0f, YEL_SAT}
     };
 
-    float2 val_curve[N_CORNER_POINTS] = {
-        {0.0f,        RED_VAL},
-        {1.0f / 6.0f, YEL_VAL},
-        {2.0f / 6.0f, GRN_VAL},
-        {3.0f / 6.0f, CYN_VAL},
-        {4.0f / 6.0f, BLU_VAL},
-        {5.0f / 6.0f, MAG_VAL},
-        {1.0f,        RED_VAL}
+    float2 val_curve[N_POINTS] = {
+        {5.0f / 6.0f - 1.0f, MAG_VAL},
+        {0.0f,               RED_VAL},
+        {1.0f / 6.0f,        YEL_VAL},
+        {2.0f / 6.0f,        GRN_VAL},
+        {3.0f / 6.0f,        CYN_VAL},
+        {4.0f / 6.0f,        BLU_VAL},
+        {5.0f / 6.0f,        MAG_VAL},
+        {1.0f,               RED_VAL},
+        {1.0f / 6.0f + 1.0f, YEL_VAL}
     };
 
-    float hue_result = interp_linear(hue_curve, N_HUE_POINTS, hue);
+    float hue_result = interp_linear(hue_curve, N_POINTS, hue);
     float hue_switch = INVERT ? hue : hue_result;
 
-    float sat_factor = interp_linear(sat_curve, N_CORNER_POINTS, hue_switch) * OVERALL_SAT;
-    float val_factor = interp_linear(val_curve, N_CORNER_POINTS, hue_switch) + OVERALL_VAl;
+    float sat_factor = interp_linear(sat_curve, N_POINTS, hue_switch) * OVERALL_SAT;
+    float val_factor = interp_linear(val_curve, N_POINTS, hue_switch) + OVERALL_VAl;
 
     if (!INVERT) {
         sat_factor = 1.0f / sat_factor;

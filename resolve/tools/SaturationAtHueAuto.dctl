@@ -3,6 +3,8 @@
 // Matches saturation `x` to `y` at provided hue center.
 // `x` and `y` values must be in domain 0-1.
 
+#define N_POINTS 9
+
 DEFINE_UI_PARAMS(RED_HUE, Red Hue Center, DCTLUI_VALUE_BOX, 0.0)
 DEFINE_UI_PARAMS(RED_X, Red Saturation x, DCTLUI_VALUE_BOX, 0.5)
 DEFINE_UI_PARAMS(RED_Y, Red Saturation y, DCTLUI_VALUE_BOX, 0.5)
@@ -29,18 +31,40 @@ DEFINE_UI_PARAMS(MAG_Y, Magenta Saturation y, DCTLUI_VALUE_BOX, 0.5)
 
 DEFINE_UI_PARAMS(INVERT, Invert, DCTLUI_CHECK_BOX, 0)
 
-#define N_POINTS 7
-
 typedef struct {
     float hue_center;
     float2 point;
 } AutoPoint;
 
 __DEVICE__ inline float spow(float x, float p) {
-    if (x > 0.0f) {
-        return _powf(x, p);
+    if (x < 0.0f) {
+        return -_powf(-x, p);
     }
-    return x;
+    return _powf(x, p);
+}
+
+__DEVICE__ float interp_linear(__PRIVATE__ float2 *pts, int n_pts, float x) {
+    if (x <= pts[0].x) {
+        return pts[0].y;
+    }
+
+    if (x >= pts[n_pts - 1].x) {
+        return pts[n_pts - 1].y;
+    }
+
+    int i = 0;
+    int upper = n_pts - 1;
+    while (i != upper - 1) {
+        int m = i + (upper - i) / 2;
+        if (x >= pts[m].x) {
+            i = m;
+        } else {
+            upper = m;
+        }
+    }
+
+    float t = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
+    return _mix(pts[i].y, pts[i + 1].y, t);
 }
 
 __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
@@ -55,40 +79,35 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
 
     float2 curve[N_POINTS];
 
-    for (int i = 0; i < N_POINTS - 1; i += 1) {
-        curve[i].x = params_list[i].hue_center;
+    for (int i = 1; i < N_POINTS - 2; i += 1) {
+        int j = i - 1;
+        curve[i].x = params_list[j].hue_center;
 
-        if (0.0f < params_list[i].point.x && params_list[i].point.x < 1.0f &&
-            0.0f < params_list[i].point.y && params_list[i].point.y < 1.0f)
+        if (0.0f < params_list[j].point.x && params_list[j].point.x < 1.0f &&
+            0.0f < params_list[j].point.y && params_list[j].point.y < 1.0f)
         {
-            curve[i].y = _logf(params_list[i].point.x) / _logf(params_list[i].point.y);
+            curve[i].y = _logf(params_list[j].point.x) / _logf(params_list[j].point.y);
         } else {
             curve[i].y = 1.0f;
         }
     }
 
-    // Red top anchor.
-    curve[6] = make_float2(curve[0].x + 1.0f, curve[0].y);
-
-    float hue = p_R;
-    float saturation = p_G;
-    float hue_adj = 0.0f;
-
-    if (hue <= curve[0].x) {
-        hue_adj = curve[0].y;
-    } else if (hue >= curve[N_POINTS - 1].x) {
-        hue_adj = curve[N_POINTS - 1].y;
+    if (curve[1].x > 0.5f) {
+        curve[1] = make_float2(curve[1].x - 1.0f, curve[1].y);
+        curve[7] = curve[1];
     } else {
-        for (int i = 0; i < N_POINTS - 1; i += 1) {
-            if (curve[i].x <= hue && hue < curve[i + 1].x) {
-                float slope = (hue - curve[i].x) / (curve[i + 1].x - curve[i].x);
-                hue_adj = _mix(curve[i].y, curve[i + 1].y, slope);
-                break;
-            }
-        }
+        curve[1] = curve[1];
+        curve[7] = make_float2(curve[1].x + 1.0f, curve[1].y);
     }
 
-    float result = spow(saturation, INVERT ? hue_adj : 1.0f / hue_adj);
+    curve[0] = make_float2(curve[6].x - 1.0f, curve[6].y);
+    curve[8] = make_float2(curve[2].x + 1.0f, curve[2].y);
+
+    float hue = p_R;
+    float sat = p_G;
+
+    float hue_adj = interp_linear(curve, N_POINTS, hue);
+    float result = spow(sat, INVERT ? hue_adj : 1.0f / hue_adj);
 
     return make_float3(p_R, result, p_B);
 }
