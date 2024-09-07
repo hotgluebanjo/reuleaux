@@ -67,11 +67,11 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p
     curve[0] = make_float2(MAG_HUE - 1.0f, MAG_SAT);
     curve[8] = make_float2(YEL_HUE + 1.0f, YEL_SAT);
 
-    curve[2] = make_float2(RED_HUE, RED_SAT);
-    curve[3] = make_float2(YEL_HUE, YEL_SAT);
-    curve[4] = make_float2(GRN_HUE, GRN_SAT);
-    curve[5] = make_float2(CYN_HUE, CYN_SAT);
-    curve[6] = make_float2(BLU_HUE, BLU_SAT);
+    curve[2] = make_float2(YEL_HUE, YEL_SAT);
+    curve[3] = make_float2(GRN_HUE, GRN_SAT);
+    curve[4] = make_float2(CYN_HUE, CYN_SAT);
+    curve[5] = make_float2(BLU_HUE, BLU_SAT);
+    curve[6] = make_float2(MAG_HUE, MAG_SAT);
 
     float hue = p_R;
     float sat = p_G;
