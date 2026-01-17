@@ -103,20 +103,22 @@ kernel AbicioHue : ImageComputationKernel<ePixelWise> {
         float res;
         if (invert) {
             int n_samples = 1 << sample_precision;
-            hue = fmod(hue, 1.0f);
+            float d_s = -0.5f;
+            float d_e =  1.5f;
+            float dt_n = (d_e - d_s) / float(n_samples - 1);
             int i = 0;
             int u = n_samples - 1;
             while (i != u - 1) {
                 int m = i + (u - i) / 2;
-                float vm = hr_vm(curve, (float)m / (float)(n_samples - 1));
+                float vm = hr_vm(curve, d_s + float(m) * dt_n);
                 if (hue >= vm) {
                     i = m;
                 } else {
                     u = m;
                 }
             }
-            float c0 = float(i) / float(n_samples - 1);
-            float c1 = float(i + 1) / float(n_samples - 1);
+            float c0 = d_s + float(i) * dt_n;
+            float c1 = d_s + float(i + 1) * dt_n;
             float v0 = hr_vm(curve, c0);
             float v1 = hr_vm(curve, c1);
             float t = (hue - v0) / (v1 - v0);
