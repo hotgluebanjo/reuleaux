@@ -1,0 +1,130 @@
+// https://github.com/hotgluebanjo
+
+#define N_POINTS 9
+
+float hr_vm(float2 pts[N_POINTS], float x) {
+    if (x <= pts[0].x) {
+        return pts[0].y;
+    }
+    if (x >= pts[N_POINTS - 1].x) {
+        return pts[N_POINTS - 1].y;
+    }
+    int i = 0;
+    int u = N_POINTS - 1;
+    while (i != u - 1) {
+        int m = i + (u - i) / 2;
+        if (x >= pts[m].x) {
+            i = m;
+        } else {
+            u = m;
+        }
+    }
+    float m0, m1;
+    if (i == 0) {
+        m0 = (pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x);
+        m1 = ((pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x)
+            + (pts[i + 2].y - pts[i + 1].y) / (pts[i + 2].x - pts[i + 1].x)) / 2.0f;
+    } else if (i == N_POINTS - 2) {
+        m0 = ((pts[i].y - pts[i - 1].y) / (pts[i].x - pts[i - 1].x)
+            + (pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x)) / 2.0f;
+        m1 = (pts[i].y - pts[i - 1].y) / (pts[i].x - pts[i - 1].x);
+    } else {
+        m0 = ((pts[i].y - pts[i - 1].y) / (pts[i].x - pts[i - 1].x)
+            + (pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x)) / 2.0f;
+        m1 = ((pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x)
+            + (pts[i + 2].y - pts[i + 1].y) / (pts[i + 2].x - pts[i + 1].x)) / 2.0f;
+    }
+    float delta = pts[i + 1].x - pts[i].x;
+    float t = (x - pts[i].x) / delta;
+    float h00 = 2.0f * pow(t, 3.0f) - 3.0f * pow(t, 2.0f) + 1.0f;
+    float h10 = pow(t, 3.0f) - 2.0f * pow(t, 2.0f) + t;
+    float h01 = -2.0f * pow(t, 3.0) + 3.0f * pow(t, 2.0f);
+    float h11 = pow(t, 3.0f) - pow(t, 2.0f);
+    return h00 * pts[i].y + h10 * m0 * delta + h01 * pts[i + 1].y + h11 * m1 * delta;
+}
+
+kernel AbicioHue : ImageComputationKernel<ePixelWise> {
+    Image<eRead, eAccessPoint, eEdgeClamped> src;
+    Image<eWrite> dst;
+
+    param:
+        float2 red;
+        float2 yel;
+        float2 grn;
+        float2 cyn;
+        float2 blu;
+        float2 mag;
+        bool invert;
+        int sample_precision;
+
+    local:
+        float2 curve[N_POINTS];
+
+    void define() {
+        defineParam(red, "Red", float2(0.0f));
+        defineParam(yel, "Yellow", float2(1.0f / 6.0f));
+        defineParam(grn, "Green", float2(2.0f / 6.0f));
+        defineParam(cyn, "Cyan", float2(3.0f / 6.0f));
+        defineParam(blu, "Blue", float2(4.0f / 6.0f));
+        defineParam(mag, "Magenta", float2(5.0f / 6.0f));
+        defineParam(invert, "Invert", false);
+        defineParam(sample_precision, "Inverse Sample Precision", 10);
+    }
+
+    void init() {
+        if (red.x < 0.5f && red.y < 0.5f) {
+            curve[1] = red;
+            curve[7] = red + 1.0f;
+        } else if (red.x < 0.5f && red.y >= 0.5f) {
+            curve[1] = float2(red.x, red.y - 1.0f);
+            curve[7] = float2(red.x + 1.0f, red.y);
+        } else if (red.x >= 0.5f && red.y < 0.5f) {
+            curve[1] = float2(red.x - 1.0f, red.y);
+            curve[7] = float2(red.x, red.y + 1.0f);
+        } else {
+            curve[1] = red - 1.0f;
+            curve[7] = red;
+        }
+
+        curve[0] = mag - 1.0f;
+        curve[8] = yel + 1.0f;
+
+        curve[2] = yel;
+        curve[3] = grn;
+        curve[4] = cyn;
+        curve[5] = blu;
+        curve[6] = mag;
+    }
+
+    void process() {
+        SampleType(src) input = src();
+
+        float hue = input.x;
+        float res;
+        if (invert) {
+            int n_samples = 1 << sample_precision;
+            hue = fmod(hue, 1.0f);
+            int i = 0;
+            int u = n_samples - 1;
+            while (i != u - 1) {
+                int m = i + (u - i) / 2;
+                float vm = hr_vm(curve, (float)m / (float)(n_samples - 1));
+                if (hue >= vm) {
+                    i = m;
+                } else {
+                    u = m;
+                }
+            }
+            float c0 = float(i) / float(n_samples - 1);
+            float c1 = float(i + 1) / float(n_samples - 1);
+            float v0 = hr_vm(curve, c0);
+            float v1 = hr_vm(curve, c1);
+            float t = (hue - v0) / (v1 - v0);
+            res = lerp(c0, c1, t);
+        } else {
+            res = hr_vm(curve, hue);
+        }
+
+        dst() = float4(res, input.y, input.z, input.w);
+    }
+};

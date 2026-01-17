@@ -9,39 +9,17 @@ inline float spow(float x, float p) {
     return pow(x, p);
 }
 
-inline float lerp(float a, float b, float t) {
-    return (1.0f - t) * a + t * b;
+inline float smoothstep(float a, float b, float x) {
+    float t = clamp((x - a) / (b - a), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
 }
 
-float interp_linear(float2 *pts, int n_pts, float x) {
-    if (x <= pts[0].x) {
-        return pts[0].y;
-    }
-
-    if (x >= pts[n_pts - 1].x) {
-        return pts[n_pts - 1].y;
-    }
-
-    int i = 0;
-    int upper = n_pts - 1;
-    while (i != upper - 1) {
-        int m = i + (upper - i) / 2;
-        if (x >= pts[m].x) {
-            i = m;
-        } else {
-            upper = m;
-        }
-    }
-
-    float t = (x - pts[i].x) / (pts[i + 1].x - pts[i].x);
-    return lerp(pts[i].y, pts[i + 1].y, t);
-}
-
-kernel SaturationAtHue : ImageComputationKernel<ePixelWise> {
+kernel AbicioSatPower : ImageComputationKernel<ePixelWise> {
     Image<eRead, eAccessPoint, eEdgeClamped> src;
     Image<eWrite> dst;
 
     param:
+        float overall;
         float2 red;
         float2 yel;
         float2 grn;
@@ -54,6 +32,7 @@ kernel SaturationAtHue : ImageComputationKernel<ePixelWise> {
         float2 curve[N_POINTS];
 
     void define() {
+        defineParam(overall, "Overall", 1.0f);
         defineParam(red, "Red", float2(0.0f, 1.0f));
         defineParam(yel, "Yellow", float2(1.0f / 6.0f, 1.0f));
         defineParam(grn, "Green", float2(2.0f / 6.0f, 1.0f));
@@ -88,15 +67,32 @@ kernel SaturationAtHue : ImageComputationKernel<ePixelWise> {
         float hue = input.x;
         float sat = input.y;
 
-        // This, along with ValueAtHue could be summed gaussians
-        // and still be invertible, since it's not the curve that's
-        // inverted, just the factor scaling.
-        //
-        // Sticking with linear interpolation for accuracy.
-        float hue_adj = interp_linear(curve, N_POINTS, hue);
+        // metal pointer issue
+        float hue_adj;
+        {
+            if (hue <= curve[0].x) {
+                hue_adj = curve[0].y;
+            } else if (hue >= curve[N_POINTS - 1].x) {
+                hue_adj = curve[N_POINTS - 1].y;
+            } else {
+                int i = 0;
+                int u = N_POINTS - 1;
+                while (i != u - 1) {
+                    int m = i + (u - i) / 2;
+                    if (hue >= curve[m].x) {
+                        i = m;
+                    } else {
+                        u = m;
+                    }
+                }
+                float t = smoothstep(curve[i].x, curve[i + 1].x, hue);
+                hue_adj = lerp(curve[i].y, curve[i + 1].y, t);
+            }
+        }
 
-        float result = spow(sat, invert ? hue_adj : 1.0f / hue_adj);
+        float factor = hue_adj * overall;
+        float res = spow(sat, invert ? factor : 1.0f / factor);
 
-        dst() = float4(input.x, result, input.z, input.w);
+        dst() = float4(input.x, res, input.z, input.w);
     }
 };

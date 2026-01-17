@@ -1,0 +1,87 @@
+// https://github.com/hotgluebanjo
+
+#define N_POINTS 9
+
+DEFINE_UI_PARAMS(g_overall_sat, Overall Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(g_red_hue, Red Hue, DCTLUI_SLIDER_FLOAT, 0.0, 0.0, 1.0, 0.001)
+DEFINE_UI_PARAMS(g_red_sat, Red Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(g_yel_hue, Yellow Hue, DCTLUI_SLIDER_FLOAT, 0.166, 0.0, 0.333, 0.001)
+DEFINE_UI_PARAMS(g_yel_sat, Yellow Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(g_grn_hue, Green Hue, DCTLUI_SLIDER_FLOAT, 0.333, 0.166, 0.5, 0.001)
+DEFINE_UI_PARAMS(g_grn_sat, Green Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(g_cyn_hue, Cyan Hue, DCTLUI_SLIDER_FLOAT, 0.5, 0.333, 0.666, 0.001)
+DEFINE_UI_PARAMS(g_cyn_sat, Cyan Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(g_blu_hue, Blue Hue, DCTLUI_SLIDER_FLOAT, 0.666, 0.5, 0.8333, 0.001)
+DEFINE_UI_PARAMS(g_blu_sat, Blue Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(g_mag_hue, Magenta Hue, DCTLUI_SLIDER_FLOAT, 0.833, 0.666, 1.0, 0.001)
+DEFINE_UI_PARAMS(g_mag_sat, Magenta Saturation, DCTLUI_SLIDER_FLOAT, 1.0, 0.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(g_invert, Invert, DCTLUI_CHECK_BOX, 0)
+
+__DEVICE__ inline float hgb_spow(float x, float p) {
+    if (x < 0.0f) {
+        return -_powf(-x, p);
+    }
+    return _powf(x, p);
+}
+
+__DEVICE__ inline float hgb_smoothstep(float a, float b, float x) {
+    float t = _saturatef((x - a) / (b - a));
+    return t * t * (3.0f - 2.0f * t);
+}
+
+__DEVICE__ float ls_s(__PRIVATE__ float2 *pts, int n_pts, float x) {
+    if (x <= pts[0].x) {
+        return pts[0].y;
+    }
+    if (x >= pts[n_pts - 1].x) {
+        return pts[n_pts - 1].y;
+    }
+    int i = 0;
+    int upper = n_pts - 1;
+    while (i != upper - 1) {
+        int m = i + (upper - i) / 2;
+        if (x >= pts[m].x) {
+            i = m;
+        } else {
+            upper = m;
+        }
+    }
+    float t = hgb_smoothstep(pts[i].x, pts[i + 1].x, x);
+    return _mix(pts[i].y, pts[i + 1].y, t);
+}
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    float2 curve[N_POINTS];
+
+    if (g_red_hue > 0.5f) {
+        curve[1] = make_float2(g_red_hue - 1.0f, g_red_sat);
+        curve[7] = make_float2(g_red_hue, g_red_sat);
+    } else {
+        curve[1] = make_float2(g_red_hue, g_red_sat);
+        curve[7] = make_float2(g_red_hue + 1.0f, g_red_sat);
+    }
+
+    curve[0] = make_float2(g_mag_hue - 1.0f, g_mag_sat);
+    curve[8] = make_float2(g_yel_hue + 1.0f, g_yel_sat);
+
+    curve[2] = make_float2(g_yel_hue, g_yel_sat);
+    curve[3] = make_float2(g_grn_hue, g_grn_sat);
+    curve[4] = make_float2(g_cyn_hue, g_cyn_sat);
+    curve[5] = make_float2(g_blu_hue, g_blu_sat);
+    curve[6] = make_float2(g_mag_hue, g_mag_sat);
+
+    float hue = p_R;
+    float sat = p_G;
+
+    float factor = g_overall_sat * ls_s(curve, N_POINTS, hue);
+    float result = hgb_spow(sat, g_invert ? factor : 1.0f / factor);
+
+    return make_float3(p_R, result, p_B);
+}

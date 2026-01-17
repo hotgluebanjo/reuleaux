@@ -1,0 +1,129 @@
+// https://github.com/hotgluebanjo
+
+#define N_POINTS 9
+
+inline float sn_lift(float x, float l, float s) {
+    if (x > 1.0f) {
+        return x;
+    }
+    return x * (1.0f + (l - 1.0f) * pow(1.0f - x, s));
+}
+
+inline float smoothstep(float a, float b, float x) {
+    float t = clamp((x - a) / (b - a), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+kernel AbicioSatLift : ImageComputationKernel<ePixelWise> {
+    Image<eRead, eAccessPoint, eEdgeClamped> src;
+    Image<eWrite> dst;
+
+    param:
+        float overall;
+        float2 red;
+        float2 yel;
+        float2 grn;
+        float2 cyn;
+        float2 blu;
+        float2 mag;
+        float isolation;
+        bool invert;
+        int sample_precision;
+
+    local:
+        float2 curve[N_POINTS];
+
+    void define() {
+        defineParam(overall, "Overall", 1.0f);
+        defineParam(red, "Red", float2(0.0f, 1.0f));
+        defineParam(yel, "Yellow", float2(1.0f / 6.0f, 1.0f));
+        defineParam(grn, "Green", float2(2.0f / 6.0f, 1.0f));
+        defineParam(cyn, "Cyan", float2(3.0f / 6.0f, 1.0f));
+        defineParam(blu, "Blue", float2(4.0f / 6.0f, 1.0f));
+        defineParam(mag, "Magenta", float2(5.0f / 6.0f, 1.0f));
+        defineParam(isolation, "Isolation", 4.0f);
+        defineParam(invert, "Invert", false);
+        defineParam(sample_precision, "Inverse Sample Precision", 10);
+    }
+
+    void init() {
+        if (red.x > 0.5f) {
+            curve[1] = float2(red.x - 1.0f, red.y);
+            curve[7] = red;
+        } else {
+            curve[1] = red;
+            curve[7] = float2(red.x + 1.0f, red.y);
+        }
+
+        curve[0] = float2(mag.x - 1.0f, mag.y);
+        curve[8] = float2(yel.x + 1.0f, yel.y);
+
+        curve[2] = yel;
+        curve[3] = grn;
+        curve[4] = cyn;
+        curve[5] = blu;
+        curve[6] = mag;
+    }
+
+    void process() {
+        SampleType(src) input = src();
+
+        float hue = input.x;
+        float sat = input.y;
+
+        float hue_adj;
+        {
+            if (hue <= curve[0].x) {
+                hue_adj = curve[0].y;
+            } else if (hue >= curve[N_POINTS - 1].x) {
+                hue_adj = curve[N_POINTS - 1].y;
+            } else {
+                int i = 0;
+                int u = N_POINTS - 1;
+                while (i != u - 1) {
+                    int m = i + (u - i) / 2;
+                    if (hue >= curve[m].x) {
+                        i = m;
+                    } else {
+                        u = m;
+                    }
+                }
+                float t = smoothstep(curve[i].x, curve[i + 1].x, hue);
+                hue_adj = lerp(curve[i].y, curve[i + 1].y, t);
+            }
+        }
+
+        float factor = hue_adj * overall;
+        float res;
+        if (invert) {
+            int n_samples = 1 << sample_precision;
+            if (sat <= 0.0f) {
+                res = 0.0f;
+            } else if (sat >= 1.0f) {
+                res = sat; // okay due to slope I believe
+            } else {
+                int i = 0;
+                int u = n_samples - 1;
+                while (i != u - 1) {
+                    int m = i + (u - i) / 2;
+                    float vm = sn_lift((float)m / (float)(n_samples - 1), factor, isolation);
+                    if (sat >= vm) {
+                        i = m;
+                    } else {
+                        u = m;
+                    }
+                }
+                float c0 = float(i) / float(n_samples - 1);
+                float c1 = float(i + 1) / float(n_samples - 1);
+                float v0 = sn_lift(c0, factor, isolation);
+                float v1 = sn_lift(c1, factor, isolation);
+                float t = (sat - v0) / (v1 - v0);
+                res = lerp(c0, c1, t);
+            }
+        } else {
+            res = sn_lift(sat, factor, isolation);
+        }
+
+        dst() = float4(input.x, res, input.z, input.w);
+    }
+};

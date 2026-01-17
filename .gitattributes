@@ -1,2 +1,2 @@
-*.dctl linguist-language=c
+*.dctl linguist-language=cpp
 *.blink linguist-language=cpp

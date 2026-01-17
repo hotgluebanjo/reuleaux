@@ -1,0 +1,77 @@
+// https://github.com/hotgluebanjo
+
+DEFINE_UI_PARAMS(g_direction, Direction, DCTLUI_COMBO_BOX, 0, {DIRECTION_FORWARD, DIRECTION_INVERSE}, {RGB to Reuleaux, Reuleaux to RGB})
+
+#define HGB_PI           3.141592653589793238462643f
+#define HGB_SQRT_2       1.414213562373095048801689f
+#define HGB_ATAN_SQRT_2  0.955316618124509278163857f
+
+#define ADH_NORM make_float3(2.0f * HGB_PI, 1.0f, 1.0f)
+
+__DEVICE__ inline float hgb_max3(float x, float y, float z) {
+    return _fmaxf(x, _fmaxf(y, z));
+}
+
+__DEVICE__ float3 rgb_to_reuleaux(float3 rgb) {
+    float sum = rgb.x + rgb.y + rgb.z;
+    float3 ns = sum == 0.0f ? make_float3(0.0f, 0.0f, 0.0f) : rgb / sum;
+
+    float u = (2.0f * ns.x - ns.y - ns.z) / 2.0f;
+    float v = _sqrtf(3.0f) / 2.0f * (ns.y - ns.z);
+    float h = hgb_max3(rgb.x, rgb.y, rgb.z);
+
+    float a = HGB_PI - _atan2f(v, -u);
+    float d = _hypotf(u, v);
+
+    if (d > 1.0f) {
+        d = (HGB_SQRT_2 / (3.0f * HGB_ATAN_SQRT_2)) * (d - 1.0f) + 1.0f;
+    } else {
+        d = _atan2f(d * HGB_SQRT_2, 1.0f) / HGB_ATAN_SQRT_2;
+    }
+
+    return make_float3(a, d, h) / ADH_NORM;
+}
+
+__DEVICE__ float3 reuleaux_to_rgb(float3 adh) {
+    float a = ADH_NORM.x * adh.x;
+    float d = ADH_NORM.y * adh.y;
+    float h = ADH_NORM.z * adh.z;
+
+    if (d > 1.0f) {
+        d = (3.0f * HGB_ATAN_SQRT_2 / HGB_SQRT_2) * (d - 1.0f) + 1.0f;
+    } else {
+        d = _tanf(d * HGB_ATAN_SQRT_2) / HGB_SQRT_2;
+    }
+
+    float u = d * _cosf(a);
+    float v = d * _sinf(a);
+
+    float3 ns = {
+        (2.0f * u + 1.0f) / 3.0f,
+        (_sqrtf(3.0f) * v - u + 1.0f) / 3.0f,
+        (-_sqrtf(3.0f) * v - u + 1.0f) / 3.0f
+    };
+
+    float3 rgb = {
+        ns.x * h / hgb_max3(ns.x, ns.y, ns.z),
+        ns.y * h / hgb_max3(ns.x, ns.y, ns.z),
+        ns.z * h / hgb_max3(ns.x, ns.y, ns.z)
+    };
+
+    return rgb;
+}
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B) {
+    float3 input = make_float3(p_R, p_G, p_B);
+    float3 res;
+
+    switch (g_direction) {
+    case DIRECTION_FORWARD:
+        res = rgb_to_reuleaux(input);
+        break;
+    case DIRECTION_INVERSE:
+        res = reuleaux_to_rgb(input);
+    }
+
+    return res;
+}
